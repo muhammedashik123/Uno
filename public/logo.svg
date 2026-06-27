@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="ring" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#5a2b9e"/>
+      <stop offset="70%" stop-color="#3a1d7a"/>
+      <stop offset="100%" stop-color="#1a0e3e"/>
+    </radialGradient>
+    <linearGradient id="ringEdge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c23bff"/>
+      <stop offset="50%" stop-color="#7b3bff"/>
+      <stop offset="100%" stop-color="#2aa8ff"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe27a"/>
+      <stop offset="55%" stop-color="#ffb02e"/>
+      <stop offset="100%" stop-color="#f06a1e"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff7ad0"/>
+      <stop offset="100%" stop-color="#e23191"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7ad0ff"/>
+      <stop offset="100%" stop-color="#2a7ae0"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a2b8e"/>
+      <stop offset="100%" stop-color="#2a1559"/>
+    </linearGradient>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- glow ring badge -->
+  <ellipse cx="256" cy="250" rx="232" ry="210" fill="url(#ringEdge)" opacity=".9"/>
+  <ellipse cx="256" cy="250" rx="214" ry="192" fill="url(#ring)"/>
+  <ellipse cx="256" cy="250" rx="214" ry="192" fill="none" stroke="#2aa8ff" stroke-width="5" opacity=".7"/>
+
+  <!-- fanned cards -->
+  <g stroke="#fff" stroke-width="7" stroke-linejoin="round">
+    <g transform="rotate(-26 256 250)"><rect x="150" y="92" width="74" height="118" rx="13" fill="#e23131"/></g>
+    <g transform="rotate(-13 256 250)"><rect x="186" y="74" width="74" height="118" rx="13" fill="#f5b21e"/></g>
+    <g transform="rotate(0 256 250)"><rect x="219" y="66" width="74" height="118" rx="13" fill="#36c447"/></g>
+    <g transform="rotate(13 256 250)"><rect x="252" y="74" width="74" height="118" rx="13" fill="#2a8ae0"/></g>
+    <g transform="rotate(26 256 250)"><rect x="288" y="92" width="74" height="118" rx="13" fill="#141414"/></g>
+  </g>
+  <!-- card glyphs -->
+  <g fill="#fff" font-family="Arial, sans-serif" font-weight="900" font-size="34" text-anchor="middle">
+    <text x="170" y="150" transform="rotate(-26 256 250)">1</text>
+    <text x="208" y="132" transform="rotate(-13 256 250)">2</text>
+    <text x="256" y="124" transform="rotate(0 256 250)">3</text>
+    <text x="289" y="132" transform="rotate(13 256 250)">4</text>
+    <text x="318" y="150" transform="rotate(26 256 250)" font-size="26">+4</text>
+  </g>
+  <!-- color wheel on +4 card -->
+  <g transform="rotate(26 256 250)">
+    <g transform="translate(325 165) rotate(-30)">
+      <path d="M0 0 L26 0 A26 26 0 0 1 0 26 Z" fill="#2a8ae0"/>
+      <path d="M0 0 L0 26 A26 26 0 0 1 -26 0 Z" fill="#36c447"/>
+      <path d="M0 0 L-26 0 A26 26 0 0 1 0 -26 Z" fill="#f5b21e"/>
+      <path d="M0 0 L0 -26 A26 26 0 0 1 26 0 Z" fill="#e23131"/>
+      <circle cx="0" cy="0" r="26" fill="none" stroke="#fff" stroke-width="4"/>
+    </g>
+  </g>
+
+  <!-- crown over A -->
+  <g transform="translate(150 300)" fill="url(#gold)" stroke="#a85a00" stroke-width="3" stroke-linejoin="round">
+    <path d="M-34 28 L-34 -6 L-16 12 L0 -20 L16 12 L34 -6 L34 28 Z"/>
+  </g>
+
+  <!-- AISHO wordmark -->
+  <g font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="150" text-anchor="middle"
+     stroke="#2a0f4e" stroke-width="9" paint-order="stroke" style="font-style:italic">
+    <text x="150" y="392" fill="url(#gold)">A</text>
+    <text x="225" y="392" fill="url(#gold)">I</text>
+    <text x="282" y="392" fill="url(#pink)">S</text>
+    <text x="348" y="392" fill="url(#pink)">H</text>
+    <text x="420" y="392" fill="url(#blue)">O</text>
+  </g>
+
+  <!-- UNO GAME ribbon -->
+  <g transform="translate(256 440)">
+    <rect x="-150" y="-22" width="300" height="46" rx="23" fill="url(#ribbon)" stroke="#7b3bff" stroke-width="4"/>
+    <line x1="-118" y1="0" x2="-92" y2="0" stroke="#2aa8ff" stroke-width="6" stroke-linecap="round"/>
+    <line x1="118" y1="0" x2="92" y2="0" stroke="#2aa8ff" stroke-width="6" stroke-linecap="round"/>
+    <text x="0" y="11" font-family="Arial, sans-serif" font-weight="800" font-size="30" fill="#fff"
+          text-anchor="middle" letter-spacing="3">UNO GAME</text>
+  </g>
+</svg>

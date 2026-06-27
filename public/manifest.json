@@ -1,0 +1,13 @@
+{
+  "name": "Aisho",
+  "short_name": "Aisho",
+  "description": "Play Aisho — the colorful online card game with friends.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10081f",
+  "theme_color": "#10081f",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

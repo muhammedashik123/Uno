@@ -1,0 +1,11 @@
+# Render Blueprint — lets Render auto-configure this service.
+# In the Render dashboard you can "New > Blueprint" and point it at this repo,
+# or just create a Web Service manually with the same build/start commands.
+services:
+  - type: web
+    name: uno-online
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
