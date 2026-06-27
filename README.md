@@ -1,6 +1,6 @@
-# Aisho — online multiplayer
+# Wildcard — online multiplayer
 
-Aisho is a colorful UNO-style card game. One player creates a room and gets a 5-letter code;
+Wildcard is a colorful UNO-style card game. One player creates a room and gets a 5-letter code;
 others see open rooms in the lobby (or paste the code) and join. It's built for phones, has a
 playful animated look, sound effects, **live text chat**, and **voice chat** (mic on/off).
 Empty seats can be filled with AI so you can start even on your own.
@@ -62,9 +62,9 @@ servers — fine for most networks; very restrictive/corporate networks may need
 
 ## Swapping in your own logo
 
-The product is named **Aisho** (it appears in the header, page titles, `manifest.json`, the
+The product is named **Wildcard** (it appears in the header, page titles, `manifest.json`, the
 lobby logo, and the card backs as an "A"). `public/logo.svg` is a vector recreation of your
-Aisho logo, shown on the lobby and used as the app icon.
+Wildcard logo, shown on the lobby and used as the app icon.
 
 To use your exact original artwork instead of the vector recreation:
 - Save your PNG at `public/logo.png` (ideally 512×512, plus a 180×180 works for iOS).
@@ -72,7 +72,7 @@ To use your exact original artwork instead of the vector recreation:
   the `apple-touch-icon` link's `href` to `/logo.png`.
 - For the crispest iOS Home-Screen icon, in `public/index.html` change the `apple-touch-icon`
   link's `href` to `/logo.png`.
-- To rename the product, search `index.html` / `../uno-solo.html` for "Aisho" and replace.
+- To rename the product, search `index.html` / `../uno-solo.html` for "Wildcard" and replace.
 
 ## Rules implemented
 

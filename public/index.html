@@ -7,13 +7,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Aisho">
+<meta name="apple-mobile-web-app-title" content="Wildcard">
 <link rel="manifest" href="/manifest.json">
 <!-- For the crispest iOS Home Screen icon, drop a 180x180 PNG of your logo at public/logo.png
      and change the href below to "/logo.png". The inline icon works as a default until then. -->
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff3b5c'/%3E%3Cstop offset='.5' stop-color='%23ffc531'/%3E%3Cstop offset='1' stop-color='%233aa0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='%2310081f'/%3E%3Ctext x='90' y='124' font-family='Arial' font-weight='900' font-style='italic' font-size='96' fill='url(%23g)' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff3b5c'/%3E%3Cstop offset='.5' stop-color='%23ffc531'/%3E%3Cstop offset='1' stop-color='%233aa0ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='%2310081f'/%3E%3Ctext x='90' y='124' font-family='Arial' font-weight='900' font-style='italic' font-size='96' fill='url(%23g)' text-anchor='middle'%3EW%3C/text%3E%3C/svg%3E">
 <link rel="icon" href="/logo.svg">
-<title>Aisho — play online</title>
+<title>Wildcard — play online</title>
 <style>
   :root{
     --red:#ff3b5c; --yellow:#ffc531; --green:#3ad07a; --blue:#3aa0ff;
@@ -34,7 +34,8 @@
     radial-gradient(100% 80% at 50% 120%, rgba(0,0,0,.55), transparent 60%),
     linear-gradient(180deg, rgba(11,5,24,.35), rgba(11,5,24,.78));}
   @keyframes spin{to{transform:rotate(360deg);}}
-  #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);}
+  #app{position:fixed;left:0;right:0;top:0;height:100vh;height:100dvh;display:flex;flex-direction:column;
+    padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);}
 
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;}
   .logo{display:flex;align-items:center;gap:8px;font-weight:900;font-size:22px;}
@@ -46,7 +47,7 @@
     backdrop-filter:blur(8px);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
   .iconbtn:active{transform:scale(.92);}
   .topbar .right{display:flex;gap:8px;}
-  .biglogo{display:block;margin:6px auto 4px;width:min(260px,72%);height:auto;
+  .biglogo{display:block;margin:2px auto 2px;width:min(170px,46%);height:auto;
     filter:drop-shadow(0 8px 24px rgba(123,59,255,.5));animation:rise .4s cubic-bezier(.2,1.2,.4,1);}
 
   .btn{appearance:none;border:none;cursor:pointer;font-weight:800;border-radius:15px;padding:12px 20px;font-size:15px;color:#3a1a00;
@@ -125,7 +126,7 @@
   .opp .count{font-size:11px;opacity:.85;}
   .opp .uno{position:absolute;top:-8px;right:-6px;font-size:10px;font-weight:900;background:var(--red);color:#fff;padding:2px 7px;border-radius:9px;}
   .opp .vmic{position:absolute;top:-7px;left:-5px;font-size:12px;}
-  .center{display:flex;align-items:center;justify-content:center;gap:20px;flex:1;position:relative;}
+  .center{display:flex;align-items:center;justify-content:center;gap:20px;flex:1;position:relative;min-height:150px;}
   .pile{position:relative;width:var(--card-w);height:var(--card-h);}
   .pile .card{position:absolute;top:0;left:0;}
   .deck.tappable .top{animation:nudge 1.4s ease-in-out infinite;}@keyframes nudge{50%{transform:translateY(-4px);}}
@@ -221,7 +222,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="logo"><span class="mark">🎴</span><span class="word">Aisho</span><small>online</small></div>
+    <div class="logo"><span class="mark">🎴</span><span class="word">Wildcard</span><small>online</small></div>
     <div class="right">
       <button class="iconbtn" id="soundBtn" title="Sound">🔊</button>
     </div>
@@ -230,7 +231,7 @@
   <!-- LOBBY -->
   <div class="screen" id="lobbyScreen">
     <div class="wrap">
-      <img class="biglogo" src="/logo.svg" alt="Aisho — UNO Game">
+      <img class="biglogo" src="/logo.svg" alt="Wildcard — UNO Game">
       <div class="field"><div class="lbl">Your name</div><input id="nameInput" placeholder="Enter a name" maxlength="14"></div>
       <h2>Open rooms</h2>
       <div class="row">
@@ -240,7 +241,7 @@
       <div class="roomlist" id="roomList"></div>
       <div class="divider">
         <h2>Create a room</h2>
-        <div class="field"><div class="lbl">Room name</div><input id="roomName" placeholder="My Aisho room" maxlength="20"></div>
+        <div class="field"><div class="lbl">Room name</div><input id="roomName" placeholder="My Wildcard room" maxlength="20"></div>
         <div class="field"><div class="lbl">Max players</div>
           <div class="seg" id="maxSeg"><div class="o" data-n="2">2</div><div class="o sel" data-n="3">3</div><div class="o" data-n="4">4</div></div></div>
         <div class="field"><div class="lbl">Fill empty seats with AI</div>
@@ -375,7 +376,7 @@ function cardEl(card){
   return el;
 }
 function backEl(){const el=document.createElement("div");el.className="card back";
-  el.innerHTML=`<div class="face"><div class="oval"></div></div><div class="gloss"></div><div class="logo2"><span>A</span></div>`;return el;}
+  el.innerHTML=`<div class="face"><div class="oval"></div></div><div class="gloss"></div><div class="logo2"><span>W</span></div>`;return el;}
 function canPlay(card,active,top){
   if(card.color==="wild")return true; if(card.color===active)return true;
   if(card.kind==="num"&&top.kind==="num"&&card.val===top.val)return true;

@@ -1,5 +1,5 @@
 /**
- * Aisho — UNO Game · Multiplayer Server (Node.js + Express + Socket.io)
+ * Wildcard — UNO-style Card Game · Multiplayer Server (Node.js + Express + Socket.io)
  * Rooms lobby + authoritative game + chat + WebRTC voice signaling.
  * Advanced rules: cross-stacking +2/+4, Wild+4 challenge, UNO call + catch (draw 4), round scoring.
  */
@@ -459,4 +459,4 @@ function handleLeave(socket) {
   broadcastLobby();
 }
 
-server.listen(PORT, () => { console.log(`Aisho — UNO Game server running:  http://localhost:${PORT}`); });
+server.listen(PORT, () => { console.log(`Wildcard server running:  http://localhost:${PORT}`); });
