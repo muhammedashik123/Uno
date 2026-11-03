@@ -568,7 +568,7 @@ function onReact(ev){
     Sound.special(); bigPop("🔄",`${who} reversed the direction`); return;
   }
   Sound.sad();
-  const emoji={skip:"😢",draw:"😭",caught:"🤦",badChal:"🙈",bluff:"🤥"}[ev.kind]||"😢";
+  const emoji={skip:"😢",draw:"😭",caught:"🤦"}[ev.kind]||"😢";
   bigPop(emoji,`${who} ${esc(ev.text)}`,"sad");
   const host=you?$("#meBar"):seatEl(ev.index);
   if(host){ if(!you){ host.classList.remove("sad"); void host.offsetWidth; host.classList.add("sad"); }
@@ -806,8 +806,7 @@ function renderState(prev){
       if(chain){
         forceDeadline=Date.now()+(g.forceIn||0);
         const b=add(`Draw ${g.pendingDraw}<small id="forceTimer"></small>`,"danger",()=>{Sound.draw();socket.emit("draw");});
-        if(!stackable&&!g.canChallenge){ b.disabled=true; b.innerHTML=`Drawing ${g.pendingDraw}…`; }
-        if(g.canChallenge) add("Challenge +4<small>bluff?</small>","warn",()=>{Sound.special();socket.emit("challenge");});
+        if(!stackable){ b.disabled=true; b.innerHTML=`Drawing ${g.pendingDraw}…`; }
       } else if(g.drew){
         add("Pass","",()=>{Sound.click();socket.emit("pass");});
       } else {
