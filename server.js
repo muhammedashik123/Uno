@@ -1,7 +1,7 @@
 /**
  * Wildcard — UNO-style Card Game · Multiplayer Server (Node.js + Express + Socket.io)
  * Rooms lobby + authoritative game + chat + WebRTC voice signaling.
- * Advanced rules: cross-stacking +2/+4, Wild+4 challenge, UNO call + catch (draw 4), round scoring.
+ * Advanced rules: stacking +2/+4 (only +4 on +4), mandatory draws, UNO call + catch (draw 4), round scoring.
  */
 const path = require("path");
 const http = require("http");
@@ -26,8 +26,6 @@ const MOCK = {
   skip:    ["got skipped 😢", "lost the turn 😭", "got skipped — so sad 😿", "must sit this one out 🥲"],
   draw:    ["got +{n} and lost the turn 😭", "ate +{n} cards 🥴", "took +{n}… ouch 😵", "picked up +{n}, no turn 😢"],
   caught:  ["forgot to say UNO — +{n} 🤦", "got caught napping — +{n} 😴"],
-  badChal: ["challenged and lost — +{n} 🙈"],
-  bluff:   ["got caught bluffing — +{n} 🤥"],
 };
 function mockLine(kind, n) { const a = MOCK[kind]; return a[Math.floor(Math.random() * a.length)].replace("{n}", n); }
 // Everyone in the room sees this pop-up (the victim too).
@@ -100,7 +98,7 @@ function startGame(room) {
   room.game = {
     deck, discard: [first], activeColor: first.color, cur: 0, dir: 1,
     over: false, winner: null, log: [],
-    pendingDraw: 0, wild4By: -1, wild4Legal: true, unoVuln: -1, scores: null,
+    pendingDraw: 0, unoVuln: -1, scores: null,
     drewThisTurn: false, turnSeq: 0, timer: null, forceAt: 0,
     unoVulnAt: 0, unoTimer: null, aiCatchTimer: null,
   };
@@ -180,8 +178,6 @@ function playCard(room, pIndex, handIndex, chosenColor) {
     if (!canPlay(card, g.activeColor, top)) return { ok: false, msg: "Illegal move" };
   }
 
-  const preColor = g.activeColor;
-  const handBefore = p.hand.slice();
   p.hand.splice(handIndex, 1);
   g.discard.push(card);
   g.activeColor = card.color === "wild" ? (chosenColor || "red") : card.color;
@@ -191,11 +187,8 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   let skip = false, reversed = false;
   if (card.kind === "skip") { skip = true; }
   else if (card.kind === "reverse") { g.dir *= -1; reversed = true; if (room.players.length === 2) skip = true; }
-  else if (card.kind === "draw2") { g.pendingDraw += 2; msg += ` — +${g.pendingDraw} pending`; g.wild4By = -1; }
+  else if (card.kind === "draw2") { g.pendingDraw += 2; msg += ` — +${g.pendingDraw} pending`; }
   else if (card.kind === "wild4") {
-    const hadColor = handBefore.some(c => c.color === preColor && c.color !== "wild");
-    // A +4 can only be challenged when it starts a stack, not when it's stacked onto one.
-    g.wild4By = chain ? -1 : pIndex; g.wild4Legal = !hadColor;
     g.pendingDraw += 4;
     msg += ` (color ${g.activeColor}) — +${g.pendingDraw} pending`;
   }
@@ -226,7 +219,7 @@ function drawTurn(room, pIndex) {
     const n = g.pendingDraw;
     clearTurnTimer(g);
     drawFor(room, pIndex, n);
-    g.pendingDraw = 0; g.wild4By = -1;
+    g.pendingDraw = 0;
     advance(room, 1);
     pushState(room, `${room.players[pIndex].name} drew ${n} and lost the turn`);
     react(room, "draw", pIndex, n);
@@ -253,33 +246,6 @@ function passTurn(room, pIndex) {
   if (!g.drewThisTurn) return { ok: false, msg: "Draw a card first" };
   closeUnoWindow(room, pIndex);
   advance(room, 1); pushState(room, `${room.players[pIndex].name} passed`); onTurn(room);
-  return { ok: true };
-}
-
-function challenge(room, pIndex) {
-  const g = room.game;
-  if (!g || g.over || g.cur !== pIndex) return { ok: false, msg: "Not your turn" };
-  if (g.pendingDraw <= 0 || topCard(g).kind !== "wild4" || g.wild4By < 0)
-    return { ok: false, msg: "Nothing to challenge" };
-  const accuser = room.players[pIndex];
-  const accused = room.players[g.wild4By];
-  clearTurnTimer(g);
-  if (!g.wild4Legal) {
-    const n = g.pendingDraw;
-    drawFor(room, g.wild4By, n);
-    g.pendingDraw = 0; g.wild4By = -1;
-    pushState(room, `${accuser.name} challenged — ${accused.name} bluffed and draws ${n}! ${accuser.name}'s turn.`);
-    react(room, "bluff", room.players.indexOf(accused), n);
-    onTurn(room);
-  } else {
-    const n = g.pendingDraw + 2;
-    drawFor(room, pIndex, n);
-    g.pendingDraw = 0; g.wild4By = -1;
-    advance(room, 1);
-    pushState(room, `${accuser.name} challenged and was wrong — draws ${n} and is skipped.`);
-    react(room, "badChal", pIndex, n);
-    onTurn(room);
-  }
   return { ok: true };
 }
 
@@ -325,7 +291,7 @@ function describe(c) {
 
 /**
  * Runs every time the turn changes. This is what makes +2 / +4 draws mandatory:
- *  - no legal stack card (and nothing to challenge)  -> the cards are drawn automatically
+ *  - no legal stack card                         -> the cards are drawn automatically
  *  - a legal stack card in hand                       -> STACK_DECIDE_MS to stack, then auto-draw
  */
 function onTurn(room) {
@@ -345,8 +311,7 @@ function onTurn(room) {
   if (g.pendingDraw > 0) {
     const top = topCard(g);
     const hasStack = p.hand.some(c => canStack(c, top));
-    const canChal = top.kind === "wild4" && g.wild4By >= 0;
-    if (!hasStack && !(canChal && !p.isAI)) { force(FORCED_DRAW_MS); pushState(room, ""); return; }
+    if (!hasStack) { force(FORCED_DRAW_MS); pushState(room, ""); return; }
     if (!p.isAI) { force(STACK_DECIDE_MS); pushState(room, ""); return; }
   }
   if (p.isAI) setTimeout(() => { if (g.turnSeq === seq) aiMove(room); }, 850);
@@ -425,7 +390,6 @@ function stateFor(room, socketId) {
       drew: g.drewThisTurn,
       forceIn: g.forceAt ? Math.max(0, g.forceAt - Date.now()) : 0,
       log: g.log.slice(-4),
-      canChallenge: g.pendingDraw > 0 && top.kind === "wild4" && g.wild4By >= 0 && g.cur === me,
       scores: g.scores,
     };
     base.hand = (me >= 0 && room.players[me].hand) ? room.players[me].hand : [];
@@ -518,11 +482,6 @@ io.on("connection", (socket) => {
   socket.on("pass", () => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
     const r = passTurn(room, idxOf(room, socket.id));
-    if (!r.ok && r.msg) socket.emit("err", r.msg);
-  });
-  socket.on("challenge", () => {
-    const room = rooms.get(socket.data.roomId); if (!room) return;
-    const r = challenge(room, idxOf(room, socket.id));
     if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
   socket.on("callUno", () => {

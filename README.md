@@ -88,9 +88,6 @@ Advanced rules (all on):
 - **Draws are mandatory:** the player under a +N stack cannot pass or play anything else. If they have no
   card that can stack, the cards are drawn for them automatically. If they could stack, they get 20
   seconds to decide, then the draw happens automatically. Passing is only allowed after drawing a card.
-- **Wild +4 challenge:** a +4 is only legal if the player had no card of the current color.
-  The next player can tap **Challenge +4** (only when the +4 started the stack, not when it was stacked on one) — if the +4 was a bluff, the bluffer draws the pile;
-  if it was legal, the challenger draws the pile + 2 and is skipped.
 - **2-card warning:** when any player gets down to 2 cards, everyone else sees an alert and that
   player's seat glows amber, so nobody misses a forgotten UNO call.
 - **Player notes:** tap any opponent to mark them ("No red", "Might have +4", or your own text). Everyone
@@ -98,8 +95,8 @@ Advanced rules (all on):
 - **Host tools:** the room creator gets a 👥 **Players** button in the top bar listing everyone, each with
   a **Remove** button (also: ✕ in the waiting room, or tap a seat → Remove).
   Mid-round a computer player takes over the removed player's cards. Anyone can leave with the 🚪 button.
-- **Reactions:** everyone sees a pop-up (😢 😭 🤦) when someone is skipped, takes a +2/+4, gets caught or
-  loses a challenge. The direction arrows flip when a Reverse is played.
+- **Reactions:** everyone sees a pop-up (😢 😭 🤦) when someone is skipped, takes a +2/+4, or gets caught
+  without UNO. The direction arrows flip when a Reverse is played.
 - **UNO call + catch (draw 4):** the Catch button only unlocks 2 seconds after the card is played, and
   stays open at least 3 seconds after that. when you're down to your last card you must call UNO (tap the
   red **UNO!** button — you can pre-call at 2 cards on your turn). If you don't, opponents can
