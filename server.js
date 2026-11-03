@@ -13,21 +13,37 @@ app.use(express.static(path.join(__dirname, "public")));
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 const PORT = process.env.PORT || 3000;
-const UNO_PENALTY = 4; // cards drawn when caught not saying UNO
+const UNO_PENALTY = 4;        // cards drawn when caught not saying UNO
+const MAX_PLAYERS = 20;       // upper safety limit per room (raise if you like)
+const STACK_DECIDE_MS = 20000; // time to stack or draw before the draw is forced
+const FORCED_DRAW_MS = 1200;   // short pause so everyone sees the forced draw happen
 
 const COLORS = ["red", "yellow", "green", "blue"];
-function buildDeck() {
+// One 108-card deck covers ~8 players. More players get more decks shuffled
+// together, so a +2/+4 can always be paid in full.
+function decksFor(players) { return Math.max(1, Math.ceil((players * 7 + 50) / 108)); }
+function buildDeck(numDecks = 1) {
   const d = [];
+  for (let k = 0; k < numDecks; k++) addOneDeck(d);
+  return shuffle(d);
+}
+function addOneDeck(d) {
   for (const c of COLORS) {
     d.push({ color: c, kind: "num", val: 0 });
     for (let n = 1; n <= 9; n++) { d.push({ color: c, kind: "num", val: n }); d.push({ color: c, kind: "num", val: n }); }
     for (const k of ["skip", "reverse", "draw2"]) { d.push({ color: c, kind: k }); d.push({ color: c, kind: k }); }
   }
   for (let i = 0; i < 4; i++) { d.push({ color: "wild", kind: "wild" }); d.push({ color: "wild", kind: "wild4" }); }
-  return shuffle(d);
 }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function isDraw(card) { return card.kind === "draw2" || card.kind === "wild4"; }
+// Stacking rule: on a +2 you may stack a +2 or a +4; on a +4 ONLY another +4.
+function canStack(card, top) {
+  if (!top) return false;
+  if (top.kind === "wild4") return card.kind === "wild4";
+  if (top.kind === "draw2") return card.kind === "draw2" || card.kind === "wild4";
+  return false;
+}
 function cardValue(c) { if (c.kind === "num") return c.val; if (c.kind === "wild" || c.kind === "wild4") return 50; return 20; }
 function canPlay(card, activeColor, top) {
   if (card.color === "wild") return true;
@@ -43,7 +59,7 @@ function createRoom(hostName, opts = {}) {
   let id; do { id = genId(); } while (rooms.has(id));
   const room = {
     id, name: opts.name || `${hostName}'s room`,
-    maxPlayers: Math.min(4, Math.max(2, opts.maxPlayers || 4)),
+    maxPlayers: Math.min(MAX_PLAYERS, Math.max(2, parseInt(opts.maxPlayers, 10) || 4)),
     started: false, hostId: null, players: [], game: null,
     voice: new Set(), chat: [], createdAt: Date.now(),
   };
@@ -57,7 +73,8 @@ function publicRoomList() {
 function broadcastLobby() { io.to("lobby").emit("lobby", publicRoomList()); }
 
 function startGame(room) {
-  const deck = buildDeck();
+  if (room.game) clearTurnTimer(room.game);
+  const deck = buildDeck(decksFor(room.players.length));
   for (const p of room.players) { p.hand = deck.splice(0, 7); p.saidUno = false; }
   const idx = deck.findIndex(c => c.kind === "num");
   const first = deck.splice(idx, 1)[0];
@@ -65,15 +82,21 @@ function startGame(room) {
     deck, discard: [first], activeColor: first.color, cur: 0, dir: 1,
     over: false, winner: null, log: [],
     pendingDraw: 0, wild4By: -1, wild4Legal: true, unoVuln: -1, scores: null,
+    drewThisTurn: false, turnSeq: 0, timer: null, forceAt: 0,
   };
   room.started = true;
   broadcastLobby();
   pushState(room, `Round started! ${room.players[0].name} goes first.`);
-  maybeAI(room);
+  onTurn(room);
 }
 function topCard(g) { return g.discard[g.discard.length - 1]; }
 function nextIndex(room, steps = 1) { const n = room.players.length; return (((room.game.cur + room.game.dir * steps) % n) + n) % n; }
-function advance(room, steps = 1) { room.game.cur = nextIndex(room, steps); }
+function advance(room, steps = 1) {
+  const g = room.game;
+  g.cur = nextIndex(room, steps);
+  g.drewThisTurn = false;
+}
+function clearTurnTimer(g) { if (g && g.timer) { clearTimeout(g.timer); g.timer = null; } if (g) g.forceAt = 0; }
 function drawFor(room, pIndex, k) {
   const g = room.game, p = room.players[pIndex];
   for (let i = 0; i < k; i++) { if (g.deck.length === 0) reshuffle(g); if (g.deck.length === 0) break; p.hand.push(g.deck.shift()); }
@@ -97,7 +120,9 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   const top = topCard(g);
   const chain = g.pendingDraw > 0;
   if (chain) {
-    if (!isDraw(card)) return { ok: false, msg: "Stack a +2/+4 or draw the pile" };
+    if (!canStack(card, top)) {
+      return { ok: false, msg: top.kind === "wild4" ? "Only a +4 can go on a +4 — or draw the cards" : "Stack a +2 / +4 or draw the cards" };
+    }
   } else {
     if (!canPlay(card, g.activeColor, top)) return { ok: false, msg: "Illegal move" };
   }
@@ -116,7 +141,9 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   else if (card.kind === "draw2") { g.pendingDraw += 2; msg += ` — +${g.pendingDraw} pending`; g.wild4By = -1; }
   else if (card.kind === "wild4") {
     const hadColor = handBefore.some(c => c.color === preColor && c.color !== "wild");
-    g.pendingDraw += 4; g.wild4By = pIndex; g.wild4Legal = !hadColor;
+    // A +4 can only be challenged when it starts a stack, not when it's stacked onto one.
+    g.wild4By = chain ? -1 : pIndex; g.wild4Legal = !hadColor;
+    g.pendingDraw += 4;
     msg += ` (color ${g.activeColor}) — +${g.pendingDraw} pending`;
   }
   else if (card.kind === "wild") { msg += ` (color ${g.activeColor})`; }
@@ -131,7 +158,7 @@ function playCard(room, pIndex, handIndex, chosenColor) {
 
   advance(room, skip ? 2 : 1);
   pushState(room, msg);
-  maybeAI(room);
+  onTurn(room);
   return { ok: true };
 }
 
@@ -141,25 +168,34 @@ function drawTurn(room, pIndex) {
   closeUnoWindow(room, pIndex);
   if (g.pendingDraw > 0) {
     const n = g.pendingDraw;
+    clearTurnTimer(g);
     drawFor(room, pIndex, n);
     g.pendingDraw = 0; g.wild4By = -1;
     advance(room, 1);
-    pushState(room, `${room.players[pIndex].name} drew ${n} and was skipped`);
-    maybeAI(room);
+    pushState(room, `${room.players[pIndex].name} drew ${n} and lost the turn`);
+    onTurn(room);
     return { ok: true, drewPile: true };
   }
+  if (g.drewThisTurn) return { ok: false, msg: "You already drew — play it or pass" };
   drawFor(room, pIndex, 1);
   const p = room.players[pIndex];
   const card = p.hand[p.hand.length - 1];
-  if (canPlay(card, g.activeColor, topCard(g))) { pushState(room, `${p.name} drew a card`); return { ok: true, canPlayDrawn: true }; }
-  advance(room, 1); pushState(room, `${p.name} drew and passed`); maybeAI(room);
+  if (canPlay(card, g.activeColor, topCard(g))) {
+    g.drewThisTurn = true;
+    pushState(room, `${p.name} drew a card`);
+    return { ok: true, canPlayDrawn: true };
+  }
+  advance(room, 1); pushState(room, `${p.name} drew and passed`); onTurn(room);
   return { ok: true, canPlayDrawn: false };
 }
+// You can only pass after drawing a card this turn, and never while a +2/+4 is waiting.
 function passTurn(room, pIndex) {
   const g = room.game;
-  if (!g || g.over || g.cur !== pIndex || g.pendingDraw > 0) return { ok: false };
+  if (!g || g.over || g.cur !== pIndex) return { ok: false, msg: "Not your turn" };
+  if (g.pendingDraw > 0) return { ok: false, msg: `You must draw ${g.pendingDraw} cards (or stack)` };
+  if (!g.drewThisTurn) return { ok: false, msg: "Draw a card first" };
   closeUnoWindow(room, pIndex);
-  advance(room, 1); pushState(room, `${room.players[pIndex].name} passed`); maybeAI(room);
+  advance(room, 1); pushState(room, `${room.players[pIndex].name} passed`); onTurn(room);
   return { ok: true };
 }
 
@@ -170,19 +206,20 @@ function challenge(room, pIndex) {
     return { ok: false, msg: "Nothing to challenge" };
   const accuser = room.players[pIndex];
   const accused = room.players[g.wild4By];
+  clearTurnTimer(g);
   if (!g.wild4Legal) {
     const n = g.pendingDraw;
     drawFor(room, g.wild4By, n);
     g.pendingDraw = 0; g.wild4By = -1;
     pushState(room, `${accuser.name} challenged — ${accused.name} bluffed and draws ${n}! ${accuser.name}'s turn.`);
-    maybeAI(room);
+    onTurn(room);
   } else {
     const n = g.pendingDraw + 2;
     drawFor(room, pIndex, n);
     g.pendingDraw = 0; g.wild4By = -1;
     advance(room, 1);
     pushState(room, `${accuser.name} challenged and was wrong — draws ${n} and is skipped.`);
-    maybeAI(room);
+    onTurn(room);
   }
   return { ok: true };
 }
@@ -206,6 +243,7 @@ function callUno(room, pIndex) {
 
 function endRound(room, winnerIndex) {
   const g = room.game;
+  clearTurnTimer(g);
   g.over = true; g.winner = room.players[winnerIndex].name;
   g.pendingDraw = 0; g.unoVuln = -1;
   let total = 0;
@@ -224,10 +262,33 @@ function describe(c) {
   return c.color === "wild" ? names[c.kind] : `${c.color} ${names[c.kind]}`;
 }
 
-function maybeAI(room) {
+/**
+ * Runs every time the turn changes. This is what makes +2 / +4 draws mandatory:
+ *  - no legal stack card (and nothing to challenge)  -> the cards are drawn automatically
+ *  - a legal stack card in hand                       -> STACK_DECIDE_MS to stack, then auto-draw
+ */
+function onTurn(room) {
   const g = room.game; if (!g || g.over) return;
-  const p = room.players[g.cur]; if (!p || !p.isAI) return;
-  setTimeout(() => aiMove(room), 850);
+  clearTurnTimer(g);
+  g.turnSeq++;
+  const seq = g.turnSeq, pIndex = g.cur, p = room.players[pIndex];
+  if (!p) return;
+  const force = (delay) => {
+    g.forceAt = Date.now() + delay;
+    g.timer = setTimeout(() => {
+      g.timer = null;
+      if (g.over || g.turnSeq !== seq || g.cur !== pIndex || g.pendingDraw <= 0) return;
+      drawTurn(room, pIndex);
+    }, delay);
+  };
+  if (g.pendingDraw > 0) {
+    const top = topCard(g);
+    const hasStack = p.hand.some(c => canStack(c, top));
+    const canChal = top.kind === "wild4" && g.wild4By >= 0;
+    if (!hasStack && !(canChal && !p.isAI)) { force(FORCED_DRAW_MS); pushState(room, ""); return; }
+    if (!p.isAI) { force(STACK_DECIDE_MS); pushState(room, ""); return; }
+  }
+  if (p.isAI) setTimeout(() => { if (g.turnSeq === seq) aiMove(room); }, 850);
 }
 function aiMove(room) {
   const g = room.game; if (!g || g.over) return;
@@ -240,7 +301,7 @@ function aiMove(room) {
   if (g.over) return;
 
   if (g.pendingDraw > 0) {
-    const i = p.hand.findIndex(c => isDraw(c));
+    const i = p.hand.findIndex(c => canStack(c, topCard(g)));
     if (i >= 0) { setTimeout(() => aiPlay(room, pIndex, i), 350); }
     else { drawTurn(room, pIndex); }
     return;
@@ -291,6 +352,7 @@ function stateFor(room, socketId) {
     players: room.players.map((p, i) => ({
       index: i, name: p.name, isAI: p.isAI, connected: p.connected,
       count: p.hand ? p.hand.length : 0,
+      saidUno: !!p.saidUno,
       vulnerable: g ? (g.unoVuln === i) : false,
     })),
   };
@@ -300,6 +362,9 @@ function stateFor(room, socketId) {
       activeColor: g.activeColor, top, cur: g.cur, dir: g.dir,
       over: g.over, winner: g.winner, deckCount: g.deck.length, lastMsg: g.log[g.log.length - 1] || "",
       pendingDraw: g.pendingDraw,
+      drew: g.drewThisTurn,
+      forceIn: g.forceAt ? Math.max(0, g.forceAt - Date.now()) : 0,
+      log: g.log.slice(-4),
       canChallenge: g.pendingDraw > 0 && top.kind === "wild4" && g.wild4By >= 0 && g.cur === me,
       scores: g.scores,
     };
@@ -374,7 +439,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(socket.data.roomId);
     if (!room || room.hostId !== socket.id || room.started) return;
     if (room.players.length >= room.maxPlayers) return;
-    room.players.push({ id: "AI_" + genId(), name: "CPU " + room.players.length, hand: [], isAI: true, connected: true });
+    room.players.push({ id: "AI_" + genId(), name: "CPU " + room.players.length, hand: [], isAI: true, connected: true, saidUno: false });
     broadcastLobby();
     pushState(room, "");
   });
@@ -387,11 +452,13 @@ io.on("connection", (socket) => {
   socket.on("draw", () => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
     const r = drawTurn(room, idxOf(room, socket.id));
+    if (!r.ok && r.msg) socket.emit("err", r.msg);
     if (r.ok && r.canPlayDrawn) socket.emit("drewPlayable");
   });
   socket.on("pass", () => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
-    passTurn(room, idxOf(room, socket.id));
+    const r = passTurn(room, idxOf(room, socket.id));
+    if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
   socket.on("challenge", () => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
@@ -449,7 +516,7 @@ function handleLeave(socket) {
     room.players[idx].isAI = true;
     room.players[idx].name += " (left)";
     pushState(room, `${room.players[idx].name} disconnected`);
-    maybeAI(room);
+    if (room.game.cur === idx) onTurn(room);
   } else {
     room.players.splice(idx, 1);
     if (room.hostId === socket.id) { const nh = room.players.find(p => !p.isAI); room.hostId = nh ? nh.id : null; }

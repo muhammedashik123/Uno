@@ -49,9 +49,10 @@ your branch auto-redeploys.
 
 ## Playing
 
-1. Enter a name. Create a room (set max players + AI seats) or join an open one / paste a code.
+1. Enter a name. Create a room (any size from 2 to 20 players, plus optional computer players) or join an open one / paste a code.
+   Bigger rooms automatically shuffle in extra decks (1 deck up to 8 players, 2 decks up to 23) so draws never run out.
 2. Host taps **Start game** once at least 2 players are in.
-3. On your turn, tap a glowing card or **Draw / Pass**. Wild cards ask for a color. First to
+3. On your turn, tap a glowing card or **Draw a card** (after drawing a playable card you can play it or **Pass**). Wild cards ask for a color. First to
    empty their hand wins (with confetti 🎉).
 
 **Chat:** tap the 💬 button (bottom-right) to open the room chat. Unread messages show a badge.
@@ -81,13 +82,17 @@ empty, 2-player reverse acts as a skip, and disconnect-to-AI takeover so a game 
 
 Advanced rules (all on):
 
-- **Stacking (+2 / +4, cross-stacking):** a draw card doesn't make you draw immediately — it
-  passes to the next player, who can stack another +2 or +4 (any of them on any other, cross
-  style). The "Draw stack: +N" counter grows until someone can't or won't stack and taps
-  **Draw +N**, drawing the whole pile and losing their turn.
+- **Stacking (+2 / +4):** a draw card passes to the next player, who may stack. On a **+2** you can
+  stack a +2 or a +4. On a **+4** you can stack **only another +4**. The "+N" counter grows until someone
+  can't or won't stack.
+- **Draws are mandatory:** the player under a +N stack cannot pass or play anything else. If they have no
+  card that can stack, the cards are drawn for them automatically. If they could stack, they get 20
+  seconds to decide, then the draw happens automatically. Passing is only allowed after drawing a card.
 - **Wild +4 challenge:** a +4 is only legal if the player had no card of the current color.
-  The next player can tap **Challenge!** — if the +4 was a bluff, the bluffer draws the pile;
+  The next player can tap **Challenge +4** (only when the +4 started the stack, not when it was stacked on one) — if the +4 was a bluff, the bluffer draws the pile;
   if it was legal, the challenger draws the pile + 2 and is skipped.
+- **2-card warning:** when any player gets down to 2 cards, everyone else sees an alert and that
+  player's seat glows amber, so nobody misses a forgotten UNO call.
 - **UNO call + catch (draw 4):** when you're down to your last card you must call UNO (tap the
   red **UNO!** button — you can pre-call at 2 cards on your turn). If you don't, opponents can
   tap **Catch!** before the next play and you draw 4. AI players always call, and will catch you.
