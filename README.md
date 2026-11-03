@@ -93,7 +93,15 @@ Advanced rules (all on):
   if it was legal, the challenger draws the pile + 2 and is skipped.
 - **2-card warning:** when any player gets down to 2 cards, everyone else sees an alert and that
   player's seat glows amber, so nobody misses a forgotten UNO call.
-- **UNO call + catch (draw 4):** when you're down to your last card you must call UNO (tap the
+- **Player notes:** tap any opponent to mark them ("No red", "Might have +4", or your own text). Everyone
+  except that player sees the note on their seat and gets an alert.
+- **Host tools:** the room creator gets a 👥 **Players** button in the top bar listing everyone, each with
+  a **Remove** button (also: ✕ in the waiting room, or tap a seat → Remove).
+  Mid-round a computer player takes over the removed player's cards. Anyone can leave with the 🚪 button.
+- **Reactions:** everyone sees a pop-up (😢 😭 🤦) when someone is skipped, takes a +2/+4, gets caught or
+  loses a challenge. The direction arrows flip when a Reverse is played.
+- **UNO call + catch (draw 4):** the Catch button only unlocks 2 seconds after the card is played, and
+  stays open at least 3 seconds after that. when you're down to your last card you must call UNO (tap the
   red **UNO!** button — you can pre-call at 2 cards on your turn). If you don't, opponents can
   tap **Catch!** before the next play and you draw 4. AI players always call, and will catch you.
 - **Round scoring:** when someone goes out, the end screen tallies points from everyone else's

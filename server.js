@@ -17,6 +17,24 @@ const UNO_PENALTY = 4;        // cards drawn when caught not saying UNO
 const MAX_PLAYERS = 20;       // upper safety limit per room (raise if you like)
 const STACK_DECIDE_MS = 20000; // time to stack or draw before the draw is forced
 const FORCED_DRAW_MS = 1200;   // short pause so everyone sees the forced draw happen
+const CATCH_DELAY_MS = 2000;   // others can only tap "Catch" this long after the card was played
+const CATCH_OPEN_MS = 3000;    // ...and the catch window then stays open at least this long
+const NOTE_MAX_LEN = 40;       // player marks ("no red", "holding +4?")
+const NOTES_PER_PLAYER = 4;
+
+const MOCK = {
+  skip:    ["got skipped 😢", "lost the turn 😭", "got skipped — so sad 😿", "must sit this one out 🥲"],
+  draw:    ["got +{n} and lost the turn 😭", "ate +{n} cards 🥴", "took +{n}… ouch 😵", "picked up +{n}, no turn 😢"],
+  caught:  ["forgot to say UNO — +{n} 🤦", "got caught napping — +{n} 😴"],
+  badChal: ["challenged and lost — +{n} 🙈"],
+  bluff:   ["got caught bluffing — +{n} 🤥"],
+};
+function mockLine(kind, n) { const a = MOCK[kind]; return a[Math.floor(Math.random() * a.length)].replace("{n}", n); }
+// Everyone in the room sees this pop-up (the victim too).
+function react(room, kind, index, n, extra = {}) {
+  const p = room.players[index]; if (!p) return;
+  io.to(room.id).emit("react", { kind, index, name: p.name, text: mockLine(kind, n), ...extra });
+}
 
 const COLORS = ["red", "yellow", "green", "blue"];
 // One 108-card deck covers ~8 players. More players get more decks shuffled
@@ -61,7 +79,7 @@ function createRoom(hostName, opts = {}) {
     id, name: opts.name || `${hostName}'s room`,
     maxPlayers: Math.min(MAX_PLAYERS, Math.max(2, parseInt(opts.maxPlayers, 10) || 4)),
     started: false, hostId: null, players: [], game: null,
-    voice: new Set(), chat: [], createdAt: Date.now(),
+    voice: new Set(), chat: [], notes: {}, createdAt: Date.now(),
   };
   rooms.set(id, room);
   return room;
@@ -73,7 +91,8 @@ function publicRoomList() {
 function broadcastLobby() { io.to("lobby").emit("lobby", publicRoomList()); }
 
 function startGame(room) {
-  if (room.game) clearTurnTimer(room.game);
+  if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); }
+  room.notes = {};
   const deck = buildDeck(decksFor(room.players.length));
   for (const p of room.players) { p.hand = deck.splice(0, 7); p.saidUno = false; }
   const idx = deck.findIndex(c => c.kind === "num");
@@ -83,6 +102,7 @@ function startGame(room) {
     over: false, winner: null, log: [],
     pendingDraw: 0, wild4By: -1, wild4Legal: true, unoVuln: -1, scores: null,
     drewThisTurn: false, turnSeq: 0, timer: null, forceAt: 0,
+    unoVulnAt: 0, unoTimer: null, aiCatchTimer: null,
   };
   room.started = true;
   broadcastLobby();
@@ -101,13 +121,46 @@ function drawFor(room, pIndex, k) {
   const g = room.game, p = room.players[pIndex];
   for (let i = 0; i < k; i++) { if (g.deck.length === 0) reshuffle(g); if (g.deck.length === 0) break; p.hand.push(g.deck.shift()); }
   p.saidUno = false;
-  if (g.unoVuln === pIndex) g.unoVuln = -1;
+  if (g.unoVuln === pIndex) clearUnoVuln(g);
 }
 function reshuffle(g) { const top = g.discard.pop(); g.deck = shuffle(g.discard); g.discard = [top]; }
 
+function clearUnoVuln(g) {
+  g.unoVuln = -1; g.unoVulnAt = 0;
+  if (g.unoTimer) { clearTimeout(g.unoTimer); g.unoTimer = null; }
+  if (g.aiCatchTimer) { clearTimeout(g.aiCatchTimer); g.aiCatchTimer = null; }
+}
+// The catch window normally closes when the next player acts — but never before
+// CATCH_DELAY_MS + CATCH_OPEN_MS, so people get a fair chance to tap "Catch".
 function closeUnoWindow(room, actingIndex) {
   const g = room.game;
-  if (g.unoVuln !== -1 && g.unoVuln !== actingIndex) g.unoVuln = -1;
+  if (g.unoVuln === -1 || g.unoVuln === actingIndex) return;
+  const closeAt = g.unoVulnAt + CATCH_DELAY_MS + CATCH_OPEN_MS;
+  const wait = closeAt - Date.now();
+  if (wait <= 0) { clearUnoVuln(g); return; }
+  if (!g.unoTimer) {
+    const target = g.unoVuln, at = g.unoVulnAt;
+    g.unoTimer = setTimeout(() => {
+      g.unoTimer = null;
+      if (g.unoVuln === target && g.unoVulnAt === at) { clearUnoVuln(g); pushState(room, ""); }
+    }, wait);
+  }
+}
+function openUnoVuln(room, pIndex) {
+  const g = room.game;
+  clearUnoVuln(g);
+  g.unoVuln = pIndex; g.unoVulnAt = Date.now();
+  const at = g.unoVulnAt;
+  // let everyone's screen enable the Catch button once the delay is over
+  setTimeout(() => { if (g.unoVuln === pIndex && g.unoVulnAt === at) pushState(room, ""); }, CATCH_DELAY_MS + 30);
+  // computer players also catch you, but only after the same delay
+  const ai = room.players.findIndex((p, i) => i !== pIndex && p.isAI);
+  if (ai >= 0) {
+    g.aiCatchTimer = setTimeout(() => {
+      g.aiCatchTimer = null;
+      if (g.unoVuln === pIndex && g.unoVulnAt === at && !g.over) catchUno(room, ai, pIndex);
+    }, CATCH_DELAY_MS + 900 + Math.random() * 1500);
+  }
 }
 
 function playCard(room, pIndex, handIndex, chosenColor) {
@@ -135,9 +188,9 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   closeUnoWindow(room, pIndex);
 
   let msg = `${p.name} played ${describe(card)}`;
-  let skip = false;
+  let skip = false, reversed = false;
   if (card.kind === "skip") { skip = true; }
-  else if (card.kind === "reverse") { g.dir *= -1; if (room.players.length === 2) skip = true; }
+  else if (card.kind === "reverse") { g.dir *= -1; reversed = true; if (room.players.length === 2) skip = true; }
   else if (card.kind === "draw2") { g.pendingDraw += 2; msg += ` — +${g.pendingDraw} pending`; g.wild4By = -1; }
   else if (card.kind === "wild4") {
     const hadColor = handBefore.some(c => c.color === preColor && c.color !== "wild");
@@ -153,11 +206,14 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   // UNO state — honor a pre-call made while holding 2 cards
   if (p.hand.length === 1) {
     if (p.isAI || p.saidUno) { p.saidUno = true; }
-    else { g.unoVuln = pIndex; p.saidUno = false; msg += ` — UNO?`; }
+    else { openUnoVuln(room, pIndex); p.saidUno = false; msg += ` — UNO?`; }
   } else { p.saidUno = false; }
 
+  const victim = skip ? nextIndex(room, 1) : -1;
   advance(room, skip ? 2 : 1);
   pushState(room, msg);
+  if (reversed) io.to(room.id).emit("react", { kind: "reverse", index: pIndex, name: p.name, dir: g.dir, text: "reversed the direction 🔄" });
+  if (victim >= 0 && victim !== pIndex) react(room, "skip", victim, 0, { by: p.name });
   onTurn(room);
   return { ok: true };
 }
@@ -173,6 +229,7 @@ function drawTurn(room, pIndex) {
     g.pendingDraw = 0; g.wild4By = -1;
     advance(room, 1);
     pushState(room, `${room.players[pIndex].name} drew ${n} and lost the turn`);
+    react(room, "draw", pIndex, n);
     onTurn(room);
     return { ok: true, drewPile: true };
   }
@@ -212,6 +269,7 @@ function challenge(room, pIndex) {
     drawFor(room, g.wild4By, n);
     g.pendingDraw = 0; g.wild4By = -1;
     pushState(room, `${accuser.name} challenged — ${accused.name} bluffed and draws ${n}! ${accuser.name}'s turn.`);
+    react(room, "bluff", room.players.indexOf(accused), n);
     onTurn(room);
   } else {
     const n = g.pendingDraw + 2;
@@ -219,6 +277,7 @@ function challenge(room, pIndex) {
     g.pendingDraw = 0; g.wild4By = -1;
     advance(room, 1);
     pushState(room, `${accuser.name} challenged and was wrong — draws ${n} and is skipped.`);
+    react(room, "badChal", pIndex, n);
     onTurn(room);
   }
   return { ok: true };
@@ -228,24 +287,26 @@ function catchUno(room, byIndex, targetIndex) {
   const g = room.game;
   if (!g || g.over) return { ok: false };
   if (g.unoVuln !== targetIndex || targetIndex < 0) return { ok: false, msg: "Nobody to catch" };
+  if (Date.now() < g.unoVulnAt + CATCH_DELAY_MS) return { ok: false, msg: "Wait a moment — catch opens 2 seconds after the card is played" };
   const t = room.players[targetIndex];
-  if (t.saidUno || t.hand.length !== 1) { g.unoVuln = -1; return { ok: false }; }
+  if (t.saidUno || t.hand.length !== 1) { clearUnoVuln(g); return { ok: false }; }
   drawFor(room, targetIndex, UNO_PENALTY);
-  g.unoVuln = -1;
+  clearUnoVuln(g);
   pushState(room, `${room.players[byIndex].name} caught ${t.name} — +${UNO_PENALTY} for not saying UNO!`);
+  react(room, "caught", targetIndex, UNO_PENALTY, { by: room.players[byIndex].name });
   return { ok: true };
 }
 function callUno(room, pIndex) {
   const g = room.game; if (!g) return;
   const p = room.players[pIndex];
-  if (p && p.hand && p.hand.length <= 2) { p.saidUno = true; if (g.unoVuln === pIndex) g.unoVuln = -1; pushState(room, `${p.name}: UNO!`); }
+  if (p && p.hand && p.hand.length <= 2) { p.saidUno = true; if (g.unoVuln === pIndex) clearUnoVuln(g); pushState(room, `${p.name}: UNO!`); }
 }
 
 function endRound(room, winnerIndex) {
   const g = room.game;
   clearTurnTimer(g);
   g.over = true; g.winner = room.players[winnerIndex].name;
-  g.pendingDraw = 0; g.unoVuln = -1;
+  g.pendingDraw = 0; clearUnoVuln(g);
   let total = 0;
   const breakdown = room.players.map((p, i) => {
     const pts = (p.hand || []).reduce((s, c) => s + cardValue(c), 0);
@@ -294,11 +355,6 @@ function aiMove(room) {
   const g = room.game; if (!g || g.over) return;
   const pIndex = g.cur, p = room.players[pIndex]; if (!p.isAI) return;
 
-  if (g.unoVuln !== -1 && g.unoVuln !== pIndex) {
-    const t = room.players[g.unoVuln];
-    if (t && !t.isAI && !t.saidUno && t.hand.length === 1) catchUno(room, pIndex, g.unoVuln);
-  }
-  if (g.over) return;
 
   if (g.pendingDraw > 0) {
     const i = p.hand.findIndex(c => canStack(c, topCard(g)));
@@ -346,6 +402,7 @@ function aiPlay(room, pIndex, handIndex) {
 function stateFor(room, socketId) {
   const g = room.game;
   const me = room.players.findIndex(p => p.id === socketId);
+  const now = Date.now();
   const base = {
     roomId: room.id, roomName: room.name, started: room.started, hostId: room.hostId,
     maxPlayers: room.maxPlayers, me,
@@ -354,6 +411,9 @@ function stateFor(room, socketId) {
       count: p.hand ? p.hand.length : 0,
       saidUno: !!p.saidUno,
       vulnerable: g ? (g.unoVuln === i) : false,
+      catchIn: g && g.unoVuln === i ? Math.max(0, g.unoVulnAt + CATCH_DELAY_MS - now) : 0,
+      // marks other players left on this seat — never shown to the player they're about
+      notes: i === me ? [] : (room.notes[p.id] || []).map(n => ({ id: n.id, text: n.text, by: n.byName, mine: n.by === socketId })),
     })),
   };
   if (g) {
@@ -474,6 +534,50 @@ io.on("connection", (socket) => {
     catchUno(room, idxOf(room, socket.id), typeof target === "number" ? target : -1);
   });
 
+  // ---- player marks ("no red", "holding +4?") ----
+  socket.on("note", ({ target, text }) => {
+    const room = rooms.get(socket.data.roomId); if (!room || !room.started) return;
+    const by = idxOf(room, socket.id), t = room.players[target];
+    if (by < 0 || !t || target === by) return;
+    const clean = String(text || "").replace(/\s+/g, " ").trim().slice(0, NOTE_MAX_LEN); if (!clean) return;
+    const now = Date.now();
+    if (socket.data.lastNote && now - socket.data.lastNote < 1500) { socket.emit("err", "Slow down a little"); return; }
+    socket.data.lastNote = now;
+    const list = room.notes[t.id] || (room.notes[t.id] = []);
+    list.push({ id: genId(), by: socket.id, byName: room.players[by].name, text: clean, ts: now });
+    while (list.length > NOTES_PER_PLAYER) list.shift();
+    // alert everyone except the player being marked
+    for (const p of room.players) {
+      if (p.isAI || !p.connected || p.id === t.id) continue;
+      io.to(p.id).emit("noteAlert", { by: room.players[by].name, target: t.name, targetIndex: target, text: clean, mine: p.id === socket.id });
+    }
+    pushState(room, "");
+  });
+  socket.on("noteRemove", ({ target, id }) => {
+    const room = rooms.get(socket.data.roomId); if (!room) return;
+    const t = room.players[target]; if (!t) return;
+    const list = room.notes[t.id] || [];
+    const i = list.findIndex(n => n.id === id && (n.by === socket.id || room.hostId === socket.id));
+    if (i >= 0) { list.splice(i, 1); pushState(room, ""); }
+  });
+
+  // ---- host removes a player ----
+  socket.on("kick", ({ target }) => {
+    const room = rooms.get(socket.data.roomId);
+    if (!room || room.hostId !== socket.id) return;
+    const t = room.players[target];
+    if (!t || t.id === socket.id) return;
+    const inRound = room.started && room.game && !room.game.over;
+    if (t.isAI) {
+      if (inRound) { socket.emit("err", "Computer players can be removed between rounds"); return; }
+      room.players.splice(target, 1);
+      pushState(room, `${t.name} was removed`); broadcastLobby(); return;
+    }
+    const ts = io.sockets.sockets.get(t.id);
+    if (ts) { ts.emit("kicked", { by: nameFor(room, socket.id) }); }
+    removeSocketFromRoom(ts, room, t.id, "removed");
+  });
+
   socket.on("chat", ({ text }) => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
     const clean = String(text || "").trim().slice(0, 300); if (!clean) return;
@@ -505,24 +609,38 @@ function joinRoom(socket, room, name) {
 }
 function handleLeave(socket) {
   const room = rooms.get(socket.data.roomId);
-  socket.data.roomId = null;
-  socket.join("lobby");
-  if (!room) return;
-  leaveVoice(room, socket.id);
-  const idx = room.players.findIndex(p => p.id === socket.id);
+  if (!room) { socket.data.roomId = null; return; }
+  removeSocketFromRoom(socket, room, socket.id, "left");
+}
+// Used for leaving, disconnecting and being removed by the host.
+// Mid-round the seat is handed to a computer player so the game can carry on.
+function removeSocketFromRoom(socket, room, sid, why) {
+  if (socket) {
+    socket.data.roomId = null;
+    socket.leave(room.id);
+    socket.join("lobby");
+    socket.emit("lobby", publicRoomList());
+  }
+  leaveVoice(room, sid);
+  const idx = room.players.findIndex(p => p.id === sid);
   if (idx < 0) return;
+  const p = room.players[idx];
+  if (room.hostId === sid) { const nh = room.players.find(x => !x.isAI && x.connected && x.id !== sid); room.hostId = nh ? nh.id : null; }
   if (room.started && room.game && !room.game.over) {
-    room.players[idx].connected = false;
-    room.players[idx].isAI = true;
-    room.players[idx].name += " (left)";
-    pushState(room, `${room.players[idx].name} disconnected`);
+    p.connected = false;
+    p.isAI = true;
+    p.id = "AI_" + genId();   // the old socket no longer controls this seat
+    p.name += why === "removed" ? " (removed)" : " (left)";
+    pushState(room, `${p.name.replace(/ \((left|removed)\)$/, "")} ${why === "removed" ? "was removed by the host" : "left the game"}`);
     if (room.game.cur === idx) onTurn(room);
   } else {
     room.players.splice(idx, 1);
-    if (room.hostId === socket.id) { const nh = room.players.find(p => !p.isAI); room.hostId = nh ? nh.id : null; }
-    pushState(room, "");
+    pushState(room, why === "removed" ? `${p.name} was removed by the host` : `${p.name} left`);
   }
-  if (room.players.filter(p => !p.isAI).length === 0) rooms.delete(room.id);
+  if (room.players.filter(p => !p.isAI).length === 0) {
+    if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); room.game.over = true; }
+    rooms.delete(room.id);
+  }
   broadcastLobby();
 }
 
