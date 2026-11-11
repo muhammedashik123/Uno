@@ -202,13 +202,16 @@
     background:var(--red);cursor:pointer;box-shadow:0 4px 0 var(--red-d),0 6px 14px rgba(0,0,0,.4);animation:throb 1s infinite;}
   @keyframes throb{50%{transform:scale(1.08);}}
 
-  .handwrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:22px 10px calc(10px + var(--safe-b));scrollbar-width:none;}
+  .handwrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:28px 10px calc(10px + var(--safe-b));scrollbar-width:none;}
   .handwrap::-webkit-scrollbar{display:none;}
   .hand{display:flex;justify-content:center;min-width:min-content;padding:0 8px;}
   .hand .card{margin-left:var(--ov,6px);}
   .hand .card:first-child{margin-left:0;}
-  .hand.mine .card:hover{transform:translateY(-10px);}
+  @media (hover:hover){ .hand.mine .card:hover{transform:translateY(-10px);} }
   .hand.mine .card:active{transform:translateY(-14px) scale(1.04);}
+  .hand .card.sel{transform:translateY(-22px) scale(1.06);z-index:5;box-shadow:0 0 0 3px var(--gold),0 12px 22px rgba(0,0,0,.55);}
+  .hand .card.sel::after{content:"Tap again";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);white-space:nowrap;
+    font-size:11px;font-weight:800;background:var(--gold);color:var(--ink);padding:1px 7px;border-radius:7px;}
   .handcount{text-align:center;font-size:13px;color:var(--cream-2);opacity:.8;}
 
   /* overlays */
@@ -318,14 +321,14 @@
   .rules b{font-size:15px;}
 
   /* ---- Ace: real playing cards ---- */
-  .card.pc{background:#fffdf8;border-color:#fffdf8;}
-  .card.pc .face{background:#fffdf8;border:1px solid #e6dcc8;}
-  .card.pc .rk{position:absolute;font-weight:800;line-height:.95;text-align:center;z-index:3;font-size:calc(var(--cw)*.24);}
-  .card.pc .rk i{display:block;font-style:normal;font-size:.85em;}
-  .card.pc .rk.tl{top:5px;left:6px;} .card.pc .rk.br{bottom:5px;right:6px;transform:rotate(180deg);}
-  .card.pc .pip{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--cw)*.6);z-index:2;}
-  .card.pc .pip.face2{font-size:calc(var(--cw)*.42);font-weight:800;}
-  .card.pc.r{color:#d1243a;} .card.pc.k{color:#1f1b17;}
+  /* real card faces: one sprite sheet, 13 ranks × 4 suits (public-domain Vector Playing Cards) */
+  .card.pc{height:calc(var(--cw)*1.455);border:none;border-radius:calc(var(--cw)*.075);background:#fff url(/cards.webp) no-repeat;
+    background-size:1300% 400%;box-shadow:0 0 0 1px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.4);}
+  .card.pcback{height:calc(var(--cw)*1.455);border:calc(var(--cw)*.06) solid #fff;border-radius:calc(var(--cw)*.075);
+    background:repeating-linear-gradient(45deg,#9e1b2a 0 4px,#b8283a 4px 8px),#b8283a;
+    box-shadow:0 0 0 1px rgba(0,0,0,.2),0 4px 10px rgba(0,0,0,.4),inset 0 0 0 2px #e9c46a;}
+  .card.pcback::after{content:"";position:absolute;inset:18% 22%;border:2px solid #e9c46a;border-radius:50%;
+    background:radial-gradient(circle,#e9c46a 0 18%,transparent 19%);}
   .table.ace #deck,.table.ace #discard,.table.ace #dirArrow,.table.ace #pending{display:none !important;}
   .trick{display:none;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:4px 6px;max-width:min(70vw,520px);--cw:52px;--ch:78px;}
   .table.ace .trick{display:flex;}
@@ -419,7 +422,7 @@
           All 52 cards are dealt. Whoever has the <b>A♠</b> starts. Everyone must <b>follow the suit</b> that was led (A is high).
           If everyone follows, the cards are thrown away and the highest card leads next.
           If you can’t follow, <b>cut</b> with any card: the trick stops and whoever played the highest card of the suit <b>picks up all of it</b>.
-          Empty your hand to escape. The last player holding cards is the <b>Kazhutha</b> 🐴.<br><b id="cutRule" style="font-size:14px;"></b></div>
+          Empty your hand to escape. The last player holding cards is the <b>Kazhutha</b> 🐴.<br><b id="cutRule" style="font-size:14px;"></b><br><b id="takeRule" style="font-size:14px;"></b></div>
         <div id="hostControls" style="display:none;">
           <button class="btn" id="addAiBtn" style="margin:4px;">Add computer player</button>
           <button class="btn go" id="startBtn" style="margin:4px;">Start game</button>
@@ -559,13 +562,14 @@ const SUIT_SYM={S:"♠",H:"♥",D:"♦",C:"♣"}, SUIT_NAME={S:"spades",H:"heart
 const RANK_TXT={11:"J",12:"Q",13:"K",14:"A"};
 function rankTxt(r){ return RANK_TXT[r]||String(r); }
 function aceCardEl(c){
-  const el=document.createElement("div"); const red=c.s==="H"||c.s==="D";
-  el.className="card pc "+(red?"r":"k"); const rt=rankTxt(c.r), sy=SUIT_SYM[c.s];
-  el.innerHTML=`<div class="face"></div><div class="rk tl">${rt}<i>${sy}</i></div>
-    <div class="pip${c.r>10&&c.r<14?" face2":""}">${c.r>10&&c.r<14?rt+sy:sy}</div><div class="rk br">${rt}<i>${sy}</i></div>`;
-  el.setAttribute("aria-label",`${rt} of ${SUIT_NAME[c.s]}`);
+  const el=document.createElement("div"); el.className="card pc";
+  const col=c.r-2, row=ACE_SUIT_ORDER_SPRITE[c.s];
+  el.style.backgroundPosition=`${col*100/12}% ${row*100/3}%`;
+  el.setAttribute("aria-label",`${rankTxt(c.r)} of ${SUIT_NAME[c.s]}`);
   return el;
 }
+const ACE_SUIT_ORDER_SPRITE={S:0,H:1,C:2,D:3};   // row order in cards.webp
+function aceBackEl(){ const el=document.createElement("div"); el.className="card pcback"; return el; }
 const ACE_SUIT_ORDER={S:0,H:1,C:2,D:3};
 function backEl(){const el=document.createElement("div");el.className="card back";
   el.innerHTML=`<div class="face"><div class="oval"></div></div><div class="logo2"><span>W</span></div>`;return el;}
@@ -630,6 +634,7 @@ function onReact(ev){
     const da=$("#dirArrow"); da.classList.remove("flip"); void da.offsetWidth; da.classList.add("flip");
     Sound.special(); bigPop("🔄",`${who} reversed the direction`); return;
   }
+  if(ev.kind==="take"){ Sound.special(); bigPop("🤫",`${who} ${esc(ev.text)}`); return; }
   if(ev.kind==="cut"){ Sound.special(); bigPop("✂️",`${who} ${esc(ev.text)}`); return; }
   if(ev.kind==="finish"){ Sound.win(); bigPop(ev.text.includes("1st")?"🏆":"🎉",`${who} ${esc(ev.text)}`,"happy"); if(you) Confetti.burst(); return; }
   if(ev.kind==="escape"){ Sound.win(); bigPop("🏃",`${who} ${esc(ev.text)}`,"happy"); if(you) Confetti.burst(); return; }
@@ -668,10 +673,10 @@ function renderLobby(rooms){
     d.appendChild(b); list.appendChild(d); });
 }
 function getName(){ const n=$("#nameInput").value.trim(); return n||("Player"+Math.floor(Math.random()*900+100)); }
-let gameType="wildcard", hiddenCut=false;
+let gameType="wildcard", hiddenCut=false, allowTake=true;
 const GAME_NAME={wildcard:"Wildcard",ace:"Ace ♠"};
 function createRoom(){ myName=getName(); Sound.unlock();
-  socket.emit("createRoom",{name:myName,roomName:$("#roomName").value.trim()||myName+"'s room",maxPlayers,aiSeats,gameType,hiddenCut},res=>{ if(!(res&&res.ok)) toast(res&&res.msg||"Could not create the room"); }); }
+  socket.emit("createRoom",{name:myName,roomName:$("#roomName").value.trim()||myName+"'s room",maxPlayers,aiSeats,gameType,hiddenCut,allowTake},res=>{ if(!(res&&res.ok)) toast(res&&res.msg||"Could not create the room"); }); }
 function joinRoom(code){ myName=getName(); Sound.unlock();
   socket.emit("joinRoom",{roomId:code,name:myName},res=>{ if(!(res&&res.ok)) toast(res&&res.msg||"Could not join"); }); }
 
@@ -873,10 +878,12 @@ function renderState(prev){
   const items=hand.map((c,i)=>({c,i})).sort((a,b)=>sortKey(a.c)-sortKey(b.c));
   items.forEach(({c,i})=>{ const el=cardEl(c);
     const ok=myTurn && (chain ? canStack(c,g.top) : canPlay(c,g.activeColor,g.top));
+    markSelected(el,c,i,myTurn);
     el.onclick=()=>{ if(!myTurn) return;
-      if(!ok){ Sound.error(); toast(chain?(g.top.kind==="wild4"?"Only a +4 can go on a +4":"Only a +2 can go on a +2"):"That card doesn’t match"); return; }
-      if(c.color==="wild"){ pendingPlay=i; openColorPicker(i); }
-      else { playSound(c); socket.emit("play",{handIndex:i}); } };
+      cardTap(el,c,i,()=>{
+        if(!ok){ Sound.error(); toast(chain?(g.top.kind==="wild4"?"Only a +4 can go on a +4":"Only a +2 can go on a +2"):"That card doesn’t match"); return; }
+        if(c.color==="wild"){ pendingPlay=i; openColorPicker(i); }
+        else { playSound(c); socket.emit("play",{handIndex:i}); } }); };
     H.appendChild(el); });
   fitHand();
 
@@ -909,7 +916,9 @@ function renderState(prev){
 }
 
 /* ---- ACE (Kazhutha) screen ---- */
+let takeCount=1;
 function renderAce(prev){
+  pendingFx=[];
   const g=S.game, pg=prev&&prev.game&&prev.game.type==="ace"?prev.game:null;
   const myTurn=g.cur===S.me&&!g.over&&!g.result;
   const hand=S.hand||[];
@@ -921,7 +930,7 @@ function renderAce(prev){
   g.trick.forEach((t,k)=>{
     const slot=document.createElement("div"); slot.className="slot";
     if(g.result&&g.result.kind==="cut"){ if(k===g.trick.length-1) slot.classList.add("cut"); if(t.p===g.result.picker && t.card && t.card.s===g.ledSuit) slot.classList.add("high"); }
-    const el=t.hidden?backEl():aceCardEl(t.card); slot.appendChild(el);
+    const el=t.hidden?aceBackEl():aceCardEl(t.card); slot.appendChild(el);
     const lb=document.createElement("div"); lb.className="who2";
     lb.textContent=g.result&&g.result.kind==="cut"&&k===g.trick.length-1?"✂️ "+nm(t.p):(slot.classList.contains("high")?"picks up":nm(t.p));
     slot.appendChild(lb); T.appendChild(slot);
@@ -955,21 +964,35 @@ function renderAce(prev){
   const H=$("#hand"); H.innerHTML=""; H.classList.toggle("mine",myTurn);
   hand.map((c,i)=>({c,i})).sort((a,b)=>(ACE_SUIT_ORDER[a.c.s]-ACE_SUIT_ORDER[b.c.s])||(a.c.r-b.c.r)).forEach(({c,i})=>{
     const el=aceCardEl(c);
+    markSelected(el,c,i,myTurn);
     el.onclick=()=>{ if(!myTurn) return;
-      if(g.trick.length && c.s!==g.ledSuit && hand.some(x=>x.s===g.ledSuit)){ Sound.error(); toast(`You must follow suit — play a ${SUIT_SYM[g.ledSuit]}`); return; }
-      if(!g.trick.length && g.firstTrick && !(c.s==="S"&&c.r===14)){ Sound.error(); toast("The first card must be the A♠"); return; }
-      Sound.play(); socket.emit("play",{handIndex:i}); };
+      cardTap(el,c,i,()=>{
+        if(g.trick.length && c.s!==g.ledSuit && hand.some(x=>x.s===g.ledSuit)){ Sound.error(); toast(`You must follow suit — play a ${SUIT_SYM[g.ledSuit]}`); return; }
+        if(!g.trick.length && g.firstTrick && !(c.s==="S"&&c.r===14)){ Sound.error(); toast("The first card must be the A♠"); return; }
+        Sound.play(); socket.emit("play",{handIndex:i}); }); };
     H.appendChild(el); });
   fitHand();
-  $("#actions").innerHTML="";
+  const A=$("#actions"); A.innerHTML="";
+  if(g.canTake && S.players[g.takeFrom]){
+    const tgt=S.players[g.takeFrom], max=Math.max(1,tgt.count); let n=Math.min(takeCount,max);
+    const b=document.createElement("button"); b.className="btn warn"; b.innerHTML=`Take cards from ${esc(tgt.name)} 🤫<small>face down, at random</small>`;
+    b.onclick=()=>{ Sound.click(); A.innerHTML="";
+      const row=document.createElement("div"); row.className="stepper"; row.style.cssText="background:var(--cream);color:var(--ink);border-radius:14px;padding:6px 10px;";
+      row.innerHTML=`<button data-d="-1" aria-label="Fewer">−</button><output>${n}</output><button data-d="1" aria-label="More">+</button><span class="hint">of ${tgt.count}</span>`;
+      row.addEventListener("click",e=>{ const s=e.target.closest("button"); if(!s||!s.dataset.d) return; n=Math.max(1,Math.min(max,n+(+s.dataset.d))); takeCount=n; row.querySelector("output").textContent=n; });
+      const ok=document.createElement("button"); ok.className="btn go"; ok.textContent="Take"; ok.onclick=()=>{ Sound.draw(); socket.emit("take",{count:n}); };
+      const no=document.createElement("button"); no.className="btn ghost"; no.textContent="Cancel"; no.onclick=()=>renderAce(null);
+      A.append(row,ok,no); };
+    A.appendChild(b);
+  }
 
   // animations: card flies to the table; a picked-up trick flies to the picker
   if(pg){
     if(g.trick.length>pg.trick.length){ const t=g.trick[g.trick.length-1];
-      Sound.whoosh(); flyFrom(t.p===S.me?$("#handwrap"):seatEl(t.p),$("#trick"),()=>t.hidden?backEl():aceCardEl(t.card)); }
+      Sound.whoosh(); flyFrom(t.p===S.me?$("#handwrap"):seatEl(t.p),$("#trick"),()=>t.hidden?aceBackEl():aceCardEl(t.card)); }
     if(pg.trick.length && !g.trick.length && pg.result && pg.result.kind==="cut"){
       const pk=pg.result.picker, to=pk===S.me?$("#handwrap"):seatEl(pk);
-      for(let k=0;k<Math.min(pg.trick.length,6);k++) flyFrom($("#trick"),to,backEl,k*90); }
+      for(let k=0;k<Math.min(pg.trick.length,6);k++) flyFrom($("#trick"),to,aceBackEl,k*90); }
   }
   if(playerOpen!==null && playerOpen!=="manage") renderPlayer();
   if(g.over) showEnd(g);
@@ -1035,6 +1058,19 @@ function confirmBox(title,text,yes,fn){
 setInterval(()=>{ const t=document.getElementById("forceTimer"); if(!t) return;
   const s=Math.max(0,Math.ceil((forceDeadline-Date.now())/1000)); t.textContent=s>0?`auto-draw in ${s}s`:""; },250);
 
+/* On touch screens the first tap lifts a card, the second tap plays it — stops the
+   neighbouring card from being played when a fingertip lands on the overlap. */
+const COARSE=matchMedia("(pointer: coarse)").matches;
+let selIdx=-1, selKey="";
+function cardTap(el,c,i,play){
+  if(!COARSE){ play(); return; }
+  const key=JSON.stringify(c);
+  if(selIdx===i && selKey===key){ selIdx=-1; selKey=""; play(); return; }
+  selIdx=i; selKey=key; Sound.click();
+  document.querySelectorAll("#hand .card.sel").forEach(x=>x.classList.remove("sel")); el.classList.add("sel");
+  el.scrollIntoView({block:"nearest",inline:"nearest"});
+}
+function markSelected(el,c,i,myTurn){ if(!myTurn){ selIdx=-1; selKey=""; return; } if(selIdx===i && selKey===JSON.stringify(c)) el.classList.add("sel"); }
 function fitHand(){
   const H=$("#hand"), n=H.children.length; if(!n) return;
   const cw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--cw"))||76;
@@ -1049,6 +1085,8 @@ function renderWait(){
   $("#roomCode").textContent=S.roomId;
   $("#waitGame").textContent=GAME_NAME[S.gameType]||"Wildcard";
   $("#aceRules").style.display=S.gameType==="ace"?"block":"none";
+  if(S.gameType==="ace" && !window.__cardsLoaded){ window.__cardsLoaded=true; new Image().src="/cards.webp"; }
+  $("#takeRule").textContent="On your turn you may also take random face-down cards from the next player.";
   $("#cutRule").textContent=S.hiddenCut?"In this room, cut cards are played face down — only the cutter and the player who picks up see them.":"In this room, cut cards are played face up for everyone to see.";
   const seats=$("#seatList"); seats.innerHTML="";
   const amHostW=(S.hostId===socket.id);
@@ -1229,7 +1267,7 @@ $("#colorCancel").onclick=()=>{ pendingPlay=null; $("#colorOverlay").classList.a
 $("#soundBtn").onclick=()=>{ const on=!Sound.isOn(); Sound.setOn(on); $("#soundBtn").textContent=on?"🔊":"🔇"; if(on){Sound.unlock();Sound.click();} };
 
 ["touchstart","pointerdown"].forEach(ev=>window.addEventListener(ev,()=>Sound.unlock(),{once:true}));
-let lastTouch=0; document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<300&&!e.target.closest("input"))e.preventDefault();lastTouch=n;},{passive:false});
+let lastTouch=0; document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<300&&!e.target.closest("input,#hand .card"))e.preventDefault();lastTouch=n;},{passive:false});
 
 connect();
 })();
