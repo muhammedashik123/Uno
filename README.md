@@ -82,8 +82,9 @@ empty, 2-player reverse acts as a skip, and disconnect-to-AI takeover so a game 
 
 Advanced rules (all on):
 
-- **Stacking (+2 / +4):** a draw card passes to the next player, who may stack. On a **+2** you can
-  stack a +2 or a +4. On a **+4** you can stack **only another +4**. The "+N" counter grows until someone
+- **Random first player:** a random player starts each round.
+- **Stacking (+2 / +4):** a draw card passes to the next player, who may stack. You can only stack
+  like on like: a **+2 only on a +2**, a **+4 only on a +4**. The "+N" counter grows until someone
   can't or won't stack.
 - **Draws are mandatory:** the player under a +N stack cannot pass or play anything else. If they have no
   card that can stack, the cards are drawn for them automatically. If they could stack, they get 20

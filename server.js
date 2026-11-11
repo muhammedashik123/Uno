@@ -53,12 +53,10 @@ function addOneDeck(d) {
 }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function isDraw(card) { return card.kind === "draw2" || card.kind === "wild4"; }
-// Stacking rule: on a +2 you may stack a +2 or a +4; on a +4 ONLY another +4.
+// Stacking rule: only like on like — a +2 on a +2, a +4 on a +4.
 function canStack(card, top) {
-  if (!top) return false;
-  if (top.kind === "wild4") return card.kind === "wild4";
-  if (top.kind === "draw2") return card.kind === "draw2" || card.kind === "wild4";
-  return false;
+  if (!top || !isDraw(top)) return false;
+  return card.kind === top.kind;
 }
 function cardValue(c) { if (c.kind === "num") return c.val; if (c.kind === "wild" || c.kind === "wild4") return 50; return 20; }
 function canPlay(card, activeColor, top) {
@@ -95,8 +93,9 @@ function startGame(room) {
   for (const p of room.players) { p.hand = deck.splice(0, 7); p.saidUno = false; }
   const idx = deck.findIndex(c => c.kind === "num");
   const first = deck.splice(idx, 1)[0];
+  const starter = Math.floor(Math.random() * room.players.length); // random first player every round
   room.game = {
-    deck, discard: [first], activeColor: first.color, cur: 0, dir: 1,
+    deck, discard: [first], activeColor: first.color, cur: starter, dir: 1,
     over: false, winner: null, log: [],
     pendingDraw: 0, unoVuln: -1, scores: null,
     drewThisTurn: false, turnSeq: 0, timer: null, forceAt: 0,
@@ -104,7 +103,7 @@ function startGame(room) {
   };
   room.started = true;
   broadcastLobby();
-  pushState(room, `Round started! ${room.players[0].name} goes first.`);
+  pushState(room, `Round started! ${room.players[starter].name} goes first (picked at random).`);
   onTurn(room);
 }
 function topCard(g) { return g.discard[g.discard.length - 1]; }
@@ -172,7 +171,7 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   const chain = g.pendingDraw > 0;
   if (chain) {
     if (!canStack(card, top)) {
-      return { ok: false, msg: top.kind === "wild4" ? "Only a +4 can go on a +4 — or draw the cards" : "Stack a +2 / +4 or draw the cards" };
+      return { ok: false, msg: top.kind === "wild4" ? "Only a +4 can go on a +4 — or draw the cards" : "Only a +2 can go on a +2 — or draw the cards" };
     }
   } else {
     if (!canPlay(card, g.activeColor, top)) return { ok: false, msg: "Illegal move" };
@@ -265,7 +264,12 @@ function catchUno(room, byIndex, targetIndex) {
 function callUno(room, pIndex) {
   const g = room.game; if (!g) return;
   const p = room.players[pIndex];
-  if (p && p.hand && p.hand.length <= 2) { p.saidUno = true; if (g.unoVuln === pIndex) clearUnoVuln(g); pushState(room, `${p.name}: UNO!`); }
+  if (!p || !p.hand || g.over) return;
+  // Allowed when already on 1 card, or on your turn with 2 cards and one of them is playable
+  const top = topCard(g);
+  const playableNow = g.cur === pIndex && p.hand.length === 2 &&
+    p.hand.some(c => g.pendingDraw > 0 ? canStack(c, top) : canPlay(c, g.activeColor, top));
+  if (p.hand.length === 1 || playableNow) { p.saidUno = true; if (g.unoVuln === pIndex) clearUnoVuln(g); pushState(room, `${p.name}: UNO!`); }
 }
 
 function endRound(room, winnerIndex) {
