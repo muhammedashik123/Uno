@@ -9,7 +9,14 @@ const express = require("express");
 const { Server } = require("socket.io");
 
 const app = express();
-app.use(express.static(path.join(__dirname, "public")));
+// Never let phones keep a stale copy of the game page: always re-check with the server.
+app.use(express.static(path.join(__dirname, "public"), {
+  etag: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith(".html") || filePath.endsWith("manifest.json")) res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    else res.setHeader("Cache-Control", "public, max-age=86400");
+  },
+}));
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 const PORT = process.env.PORT || 3000;
@@ -21,6 +28,7 @@ const CATCH_DELAY_MS = 2000;   // others can only tap "Catch" this long after th
 const CATCH_OPEN_MS = 3000;    // ...and the catch window then stays open at least this long
 const NOTE_MAX_LEN = 40;       // player marks ("no red", "holding +4?")
 const NOTES_PER_PLAYER = 4;
+const RECONNECT_GRACE_MS = 90000; // a player who loses connection mid-game keeps their seat this long
 
 const MOCK = {
   skip:    ["got skipped 😢", "lost the turn 😭", "got skipped — so sad 😿", "must sit this one out 🥲"],
@@ -416,6 +424,7 @@ function stateFor(room, socketId) {
   const base = {
     roomId: room.id, roomName: room.name, started: room.started, hostId: room.hostId, gameType: room.gameType, hiddenCut: !!room.hiddenCut, allowTake: !!room.allowTake,
     maxPlayers: room.maxPlayers, me,
+    token: me >= 0 ? room.players[me].token || null : null,   // lets this player reconnect into their seat
     players: room.players.map((p, i) => ({
       index: i, name: p.name, isAI: p.isAI, connected: p.connected,
       count: p.hand ? p.hand.length : 0,
@@ -620,15 +629,47 @@ io.on("connection", (socket) => {
   socket.on("voice-leave", () => { const room = rooms.get(socket.data.roomId); leaveVoice(room, socket.id); });
 
   socket.on("leaveRoom", () => handleLeave(socket));
-  socket.on("disconnect", () => handleLeave(socket));
+  socket.on("disconnect", () => handleDisconnect(socket));
+
+  // A phone that locked its screen or switched apps comes back here with its token
+  socket.on("rejoin", ({ roomId, token }, cb) => {
+    const room = rooms.get((roomId || "").toUpperCase());
+    const p = room && room.players.find(x => x.token && x.token === token && !x.isAI);
+    if (!room || !p) return cb && cb({ ok: false });
+    if (p.graceTimer) { clearTimeout(p.graceTimer); p.graceTimer = null; }
+    const oldId = p.id;
+    if (socket.data.roomId && socket.data.roomId !== room.id) handleLeave(socket);
+    p.id = socket.id; p.connected = true;
+    if (room.hostId === oldId) room.hostId = socket.id;
+    socket.leave("lobby"); socket.join(room.id); socket.data.roomId = room.id;
+    cb && cb({ ok: true });
+    pushState(room, oldId === socket.id ? "" : `${p.name} is back 👋`);
+    broadcastVoiceRoster(room);
+  });
 });
 
 function joinRoom(socket, room, name) {
   socket.leave("lobby");
   socket.join(room.id);
   socket.data.roomId = room.id;
-  room.players.push({ id: socket.id, name, hand: [], isAI: false, connected: true, saidUno: false });
+  room.players.push({ id: socket.id, name, hand: [], isAI: false, connected: true, saidUno: false, token: genId() + genId() });
   if (!room.hostId) room.hostId = socket.id;
+}
+function handleDisconnect(socket) {
+  const room = rooms.get(socket.data.roomId);
+  if (!room) { socket.data.roomId = null; return; }
+  const p = room.players.find(x => x.id === socket.id);
+  const inRound = room.started && room.game && !room.game.over;
+  if (!p || !inRound) { handleLeave(socket); return; }
+  // mid-game: keep the seat and wait for them to reconnect
+  p.connected = false;
+  leaveVoice(room, socket.id);
+  const sid = socket.id;
+  p.graceTimer = setTimeout(() => {
+    p.graceTimer = null;
+    if (!p.connected && p.id === sid) removeSocketFromRoom(null, room, sid, "left");
+  }, RECONNECT_GRACE_MS);
+  pushState(room, `${p.name} lost connection — waiting for them to come back…`);
 }
 function handleLeave(socket) {
   const room = rooms.get(socket.data.roomId);
@@ -648,6 +689,7 @@ function removeSocketFromRoom(socket, room, sid, why) {
   const idx = room.players.findIndex(p => p.id === sid);
   if (idx < 0) return;
   const p = room.players[idx];
+  if (p.graceTimer) { clearTimeout(p.graceTimer); p.graceTimer = null; }
   if (room.hostId === sid) { const nh = room.players.find(x => !x.isAI && x.connected && x.id !== sid); room.hostId = nh ? nh.id : null; }
   if (room.started && room.game && !room.game.over) {
     p.connected = false;

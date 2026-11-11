@@ -91,6 +91,9 @@ Advanced rules (all on):
 - **Draws are mandatory:** the player under a +N stack cannot pass or play anything else. If they have no
   card that can stack, the cards are drawn for them automatically. If they could stack, they get 20
   seconds to decide, then the draw happens automatically. Passing is only allowed after drawing a card.
+- **Reconnecting:** if a phone locks its screen or loses signal mid-game, the seat is kept for 90 seconds
+  and the player drops straight back into it when the page reconnects or reloads. Only after that does a
+  computer player take over.
 - **2-card warning:** when any player gets down to 2 cards, everyone else sees an alert and that
   player's seat glows amber, so nobody misses a forgotten UNO call.
 - **Player notes:** tap any opponent to mark them ("No red", "Might have +4", or your own text). Everyone
