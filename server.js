@@ -25,6 +25,7 @@ const NOTES_PER_PLAYER = 4;
 const MOCK = {
   skip:    ["got skipped 😢", "lost the turn 😭", "got skipped — so sad 😿", "must sit this one out 🥲"],
   draw:    ["got +{n} and lost the turn 😭", "ate +{n} cards 🥴", "took +{n}… ouch 😵", "picked up +{n}, no turn 😢"],
+  last:    ["came last with {n} cards 😭", "is the last one standing — {n} cards 🥲"],
   caught:  ["forgot to say UNO — +{n} 🤦", "got caught napping — +{n} 😴"],
 };
 function mockLine(kind, n) { const a = MOCK[kind]; return a[Math.floor(Math.random() * a.length)].replace("{n}", n); }
@@ -51,6 +52,8 @@ function addOneDeck(d) {
   }
   for (let i = 0; i < 4; i++) { d.push({ color: "wild", kind: "wild" }); d.push({ color: "wild", kind: "wild4" }); }
 }
+const createAce = require("./ace");
+let ace; // set up below once io + pushState exist
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function isDraw(card) { return card.kind === "draw2" || card.kind === "wild4"; }
 // Stacking rule: only like on like — a +2 on a +2, a +4 on a +4.
@@ -73,7 +76,9 @@ function createRoom(hostName, opts = {}) {
   let id; do { id = genId(); } while (rooms.has(id));
   const room = {
     id, name: opts.name || `${hostName}'s room`,
-    maxPlayers: Math.min(MAX_PLAYERS, Math.max(2, parseInt(opts.maxPlayers, 10) || 4)),
+    gameType: opts.gameType === "ace" ? "ace" : "wildcard",
+    hiddenCut: opts.gameType === "ace" && !!opts.hiddenCut,   // Ace: cut card played face down
+    maxPlayers: Math.min(opts.gameType === "ace" ? 12 : MAX_PLAYERS, Math.max(2, parseInt(opts.maxPlayers, 10) || 4)),
     started: false, hostId: null, players: [], game: null,
     voice: new Set(), chat: [], notes: {}, createdAt: Date.now(),
   };
@@ -82,13 +87,14 @@ function createRoom(hostName, opts = {}) {
 }
 function publicRoomList() {
   return [...rooms.values()].filter(r => !r.started && r.players.length < r.maxPlayers)
-    .map(r => ({ id: r.id, name: r.name, players: r.players.length, maxPlayers: r.maxPlayers }));
+    .map(r => ({ id: r.id, name: r.name, players: r.players.length, maxPlayers: r.maxPlayers, gameType: r.gameType, hiddenCut: !!r.hiddenCut }));
 }
 function broadcastLobby() { io.to("lobby").emit("lobby", publicRoomList()); }
 
 function startGame(room) {
-  if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); }
+  if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); ace.stop(room.game); }
   room.notes = {};
+  if (room.gameType === "ace") { ace.start(room); broadcastLobby(); return; }
   const deck = buildDeck(decksFor(room.players.length));
   for (const p of room.players) { p.hand = deck.splice(0, 7); p.saidUno = false; }
   const idx = deck.findIndex(c => c.kind === "num");
@@ -98,7 +104,7 @@ function startGame(room) {
     deck, discard: [first], activeColor: first.color, cur: starter, dir: 1,
     over: false, winner: null, log: [],
     pendingDraw: 0, unoVuln: -1, scores: null,
-    drewThisTurn: false, turnSeq: 0, timer: null, forceAt: 0,
+    drewThisTurn: false, turnSeq: 0, timer: null, forceAt: 0, finished: [],
     unoVulnAt: 0, unoTimer: null, aiCatchTimer: null,
   };
   room.started = true;
@@ -107,7 +113,17 @@ function startGame(room) {
   onTurn(room);
 }
 function topCard(g) { return g.discard[g.discard.length - 1]; }
-function nextIndex(room, steps = 1) { const n = room.players.length; return (((room.game.cur + room.game.dir * steps) % n) + n) % n; }
+// Players who already emptied their hand are skipped in the turn order.
+function isOut(g, i) { return !!(g.finished && g.finished.includes(i)); }
+function activeCount(room) { const g = room.game; return room.players.length - (g.finished ? g.finished.length : 0); }
+function nextIndex(room, steps = 1) {
+  const g = room.game, n = room.players.length;
+  let i = g.cur;
+  for (let s = 0; s < steps; s++) {
+    for (let k = 0; k < n; k++) { i = (((i + g.dir) % n) + n) % n; if (!isOut(g, i)) break; }
+  }
+  return i;
+}
 function advance(room, steps = 1) {
   const g = room.game;
   g.cur = nextIndex(room, steps);
@@ -185,7 +201,7 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   let msg = `${p.name} played ${describe(card)}`;
   let skip = false, reversed = false;
   if (card.kind === "skip") { skip = true; }
-  else if (card.kind === "reverse") { g.dir *= -1; reversed = true; if (room.players.length === 2) skip = true; }
+  else if (card.kind === "reverse") { g.dir *= -1; reversed = true; if (activeCount(room) === 2 && p.hand.length > 0) skip = true; }
   else if (card.kind === "draw2") { g.pendingDraw += 2; msg += ` — +${g.pendingDraw} pending`; }
   else if (card.kind === "wild4") {
     g.pendingDraw += 4;
@@ -193,10 +209,25 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   }
   else if (card.kind === "wild") { msg += ` (color ${g.activeColor})`; }
 
-  if (p.hand.length === 0) { endRound(room, pIndex); return { ok: true }; }
+  // Out of cards → this player finishes and the round carries on without them
+  let finishedNow = false;
+  if (p.hand.length === 0) {
+    finishedNow = true;
+    if (g.unoVuln === pIndex) clearUnoVuln(g);
+    g.finished.push(pIndex);
+    const place = g.finished.length;
+    msg += ` — and finished ${ordinal(place)}! 🎉`;
+    if (activeCount(room) <= 1) {
+      pushState(room, msg);
+      io.to(room.id).emit("react", { kind: "finish", index: pIndex, name: p.name, text: `finished ${ordinal(place)}! 🎉` });
+      endRound(room, room.players.findIndex((_, i) => !isOut(g, i)));
+      return { ok: true };
+    }
+  }
 
   // UNO state — honor a pre-call made while holding 2 cards
-  if (p.hand.length === 1) {
+  if (finishedNow) { p.saidUno = false; }
+  else if (p.hand.length === 1) {
     if (p.isAI || p.saidUno) { p.saidUno = true; }
     else { openUnoVuln(room, pIndex); p.saidUno = false; msg += ` — UNO?`; }
   } else { p.saidUno = false; }
@@ -206,6 +237,7 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   pushState(room, msg);
   if (reversed) io.to(room.id).emit("react", { kind: "reverse", index: pIndex, name: p.name, dir: g.dir, text: "reversed the direction 🔄" });
   if (victim >= 0 && victim !== pIndex) react(room, "skip", victim, 0, { by: p.name });
+  if (finishedNow) io.to(room.id).emit("react", { kind: "finish", index: pIndex, name: p.name, text: `finished ${ordinal(g.finished.length)}! 🎉` });
   onTurn(room);
   return { ok: true };
 }
@@ -272,20 +304,27 @@ function callUno(room, pIndex) {
   if (p.hand.length === 1 || playableNow) { p.saidUno = true; if (g.unoVuln === pIndex) clearUnoVuln(g); pushState(room, `${p.name}: UNO!`); }
 }
 
-function endRound(room, winnerIndex) {
+// The round ends when only one player still has cards: they come last.
+function endRound(room, loserIndex) {
   const g = room.game;
   clearTurnTimer(g);
-  g.over = true; g.winner = room.players[winnerIndex].name;
-  g.pendingDraw = 0; clearUnoVuln(g);
-  let total = 0;
-  const breakdown = room.players.map((p, i) => {
-    const pts = (p.hand || []).reduce((s, c) => s + cardValue(c), 0);
-    if (i !== winnerIndex) total += pts;
-    return { name: p.name, leftover: i === winnerIndex ? 0 : pts, cards: p.hand ? p.hand.length : 0, winner: i === winnerIndex };
-  });
-  g.scores = { winner: g.winner, winnerPoints: total, breakdown };
-  pushState(room, `${g.winner} wins the round for ${total} points! 🎉`);
+  g.over = true; g.pendingDraw = 0; clearUnoVuln(g);
+  const loser = room.players[loserIndex];
+  g.winner = room.players[g.finished[0]].name;
+  room.wcTally = room.wcTally || {};
+  const bump = (name, key) => { const t = room.wcTally[name] || (room.wcTally[name] = { wins: 0, lasts: 0 }); t[key]++; };
+  bump(g.winner, "wins");
+  if (loser) bump(loser.name, "lasts");
+  g.scores = {
+    order: g.finished.map(i => room.players[i].name),
+    loser: loser ? loser.name : "",
+    loserCards: loser ? loser.hand.length : 0,
+    tally: room.players.map(p => ({ name: p.name, ...(room.wcTally[p.name] || { wins: 0, lasts: 0 }) })),
+  };
+  pushState(room, loser ? `${g.winner} won! ${loser.name} came last with ${loser.hand.length} cards.` : `${g.winner} won!`);
+  if (loser) react(room, "last", loserIndex, loser.hand.length);
 }
+function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
 function describe(c) {
   if (c.kind === "num") return `${c.color} ${c.val}`;
@@ -299,6 +338,7 @@ function describe(c) {
  *  - a legal stack card in hand                       -> STACK_DECIDE_MS to stack, then auto-draw
  */
 function onTurn(room) {
+  if (room.gameType === "ace") return ace.onTurn(room);
   const g = room.game; if (!g || g.over) return;
   clearTurnTimer(g);
   g.turnSeq++;
@@ -373,7 +413,7 @@ function stateFor(room, socketId) {
   const me = room.players.findIndex(p => p.id === socketId);
   const now = Date.now();
   const base = {
-    roomId: room.id, roomName: room.name, started: room.started, hostId: room.hostId,
+    roomId: room.id, roomName: room.name, started: room.started, hostId: room.hostId, gameType: room.gameType, hiddenCut: !!room.hiddenCut,
     maxPlayers: room.maxPlayers, me,
     players: room.players.map((p, i) => ({
       index: i, name: p.name, isAI: p.isAI, connected: p.connected,
@@ -385,12 +425,18 @@ function stateFor(room, socketId) {
       notes: i === me ? [] : (room.notes[p.id] || []).map(n => ({ id: n.id, text: n.text, by: n.byName, mine: n.by === socketId })),
     })),
   };
+  if (g && g.type === "ace") {
+    base.game = ace.stateFor(room, me);
+    base.hand = (me >= 0 && room.players[me].hand) ? room.players[me].hand : [];
+    return base;
+  }
   if (g) {
     const top = topCard(g);
     base.game = {
       activeColor: g.activeColor, top, cur: g.cur, dir: g.dir,
       over: g.over, winner: g.winner, deckCount: g.deck.length, lastMsg: g.log[g.log.length - 1] || "",
       pendingDraw: g.pendingDraw,
+      finished: g.finished.slice(),
       drew: g.drewThisTurn,
       forceIn: g.forceAt ? Math.max(0, g.forceAt - Date.now()) : 0,
       log: g.log.slice(-4),
@@ -405,6 +451,7 @@ function pushState(room, msg) {
   for (const p of room.players) { if (p.isAI || !p.connected) continue; io.to(p.id).emit("state", stateFor(room, p.id)); }
 }
 
+ace = createAce({ io, pushState, shuffle });
 function nameFor(room, sid) { const p = room.players.find(x => x.id === sid); return p ? p.name : "Player"; }
 function broadcastVoiceRoster(room) {
   io.to(room.id).emit("voiceRoster", [...room.voice].map(sid => ({ id: sid, name: nameFor(room, sid) })));
@@ -424,8 +471,8 @@ io.on("connection", (socket) => {
 
   socket.on("listRooms", () => socket.emit("lobby", publicRoomList()));
 
-  socket.on("createRoom", ({ name, roomName, maxPlayers, aiSeats }, cb) => {
-    const room = createRoom(name || "Player", { name: roomName, maxPlayers });
+  socket.on("createRoom", ({ name, roomName, maxPlayers, aiSeats, gameType, hiddenCut }, cb) => {
+    const room = createRoom(name || "Player", { name: roomName, maxPlayers, gameType, hiddenCut });
     room.hostId = socket.id;
     joinRoom(socket, room, name || "Player");
     const ai = Math.max(0, Math.min((room.maxPlayers - 1), aiSeats || 0));
@@ -474,26 +521,28 @@ io.on("connection", (socket) => {
 
   socket.on("play", ({ handIndex, color }) => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
-    const r = playCard(room, idxOf(room, socket.id), handIndex, color);
-    if (!r.ok) socket.emit("err", r.msg);
+    const r = room.gameType === "ace"
+      ? ace.play(room, idxOf(room, socket.id), handIndex)
+      : playCard(room, idxOf(room, socket.id), handIndex, color);
+    if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
   socket.on("draw", () => {
-    const room = rooms.get(socket.data.roomId); if (!room) return;
+    const room = rooms.get(socket.data.roomId); if (!room || room.gameType === "ace") return;
     const r = drawTurn(room, idxOf(room, socket.id));
     if (!r.ok && r.msg) socket.emit("err", r.msg);
     if (r.ok && r.canPlayDrawn) socket.emit("drewPlayable");
   });
   socket.on("pass", () => {
-    const room = rooms.get(socket.data.roomId); if (!room) return;
+    const room = rooms.get(socket.data.roomId); if (!room || room.gameType === "ace") return;
     const r = passTurn(room, idxOf(room, socket.id));
     if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
   socket.on("callUno", () => {
-    const room = rooms.get(socket.data.roomId); if (!room) return;
+    const room = rooms.get(socket.data.roomId); if (!room || room.gameType === "ace") return;
     callUno(room, idxOf(room, socket.id));
   });
   socket.on("catchUno", ({ target }) => {
-    const room = rooms.get(socket.data.roomId); if (!room) return;
+    const room = rooms.get(socket.data.roomId); if (!room || room.gameType === "ace") return;
     catchUno(room, idxOf(room, socket.id), typeof target === "number" ? target : -1);
   });
 
@@ -601,7 +650,7 @@ function removeSocketFromRoom(socket, room, sid, why) {
     pushState(room, why === "removed" ? `${p.name} was removed by the host` : `${p.name} left`);
   }
   if (room.players.filter(p => !p.isAI).length === 0) {
-    if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); room.game.over = true; }
+    if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); ace.stop(room.game); room.game.over = true; }
     rooms.delete(room.id);
   }
   broadcastLobby();

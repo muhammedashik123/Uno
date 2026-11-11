@@ -83,6 +83,8 @@ empty, 2-player reverse acts as a skip, and disconnect-to-AI takeover so a game 
 Advanced rules (all on):
 
 - **Random first player:** a random player starts each round.
+- **Play until the last player:** when someone empties their hand they finish (1st, 2nd, …) and the round
+  carries on without them. It ends when only one player still has cards — they come last.
 - **Stacking (+2 / +4):** a draw card passes to the next player, who may stack. You can only stack
   like on like: a **+2 only on a +2**, a **+4 only on a +4**. The "+N" counter grows until someone
   can't or won't stack.
@@ -108,3 +110,18 @@ Advanced rules (all on):
 
 Not included (easy to add later): the 7-0 rule, jump-in, and a cumulative match target (e.g.
 first to 500).
+
+## Ace ♠ (Kerala Kazhutha)
+
+Pick **Ace** when you create a room (2–12 players). The rules live in `ace.js`.
+
+- All 52 cards are dealt. Whoever holds the **A♠** leads it to start.
+- Everyone must **follow the suit** that was led. Ace is high (A K Q J 10 … 2).
+- If everyone follows suit, the cards are thrown away and the player with the highest card leads next.
+- If you can't follow suit, you **cut** with any card. The trick stops there, and whoever played the
+  highest card of the led suit **picks up the whole trick** and leads next.
+- **Cut face up or face down:** the host picks this when creating the room. Face down hides the cut card
+  from everyone except the cutter (the player who picks up sees it once it's in their hand).
+- Empty your hand to **escape**. The last player still holding cards is the **Kazhutha** 🐴.
+- The end screen shows the escape order and how many times each player has been the Kazhutha in this room.
+
