@@ -634,7 +634,9 @@ function onReact(ev){
     const da=$("#dirArrow"); da.classList.remove("flip"); void da.offsetWidth; da.classList.add("flip");
     Sound.special(); bigPop("🔄",`${who} reversed the direction`); return;
   }
-  if(ev.kind==="take"){ Sound.special(); bigPop("🤫",`${who} ${esc(ev.text)}`); return; }
+  if(ev.kind==="takeAsk"){ Sound.special(); bigPop("🤫",`${who} ${esc(ev.text)}`); return; }
+  if(ev.kind==="takeYes"){ Sound.special(); bigPop("🤝",`${who} ${esc(ev.text)}`); return; }
+  if(ev.kind==="takeNo"){ Sound.click(); bigPop("🙅",`${who} ${esc(ev.text)}`); return; }
   if(ev.kind==="cut"){ Sound.special(); bigPop("✂️",`${who} ${esc(ev.text)}`); return; }
   if(ev.kind==="finish"){ Sound.win(); bigPop(ev.text.includes("1st")?"🏆":"🎉",`${who} ${esc(ev.text)}`,"happy"); if(you) Confetti.burst(); return; }
   if(ev.kind==="escape"){ Sound.win(); bigPop("🏃",`${who} ${esc(ev.text)}`,"happy"); if(you) Confetti.burst(); return; }
@@ -916,7 +918,7 @@ function renderState(prev){
 }
 
 /* ---- ACE (Kazhutha) screen ---- */
-let takeCount=1;
+let askedKey="";
 function renderAce(prev){
   pendingFx=[];
   const g=S.game, pg=prev&&prev.game&&prev.game.type==="ace"?prev.game:null;
@@ -974,17 +976,26 @@ function renderAce(prev){
   fitHand();
   const A=$("#actions"); A.innerHTML="";
   if(g.canTake && S.players[g.takeFrom]){
-    const tgt=S.players[g.takeFrom], max=Math.max(1,tgt.count); let n=Math.min(takeCount,max);
-    const b=document.createElement("button"); b.className="btn warn"; b.innerHTML=`Take cards from ${esc(tgt.name)} 🤫<small>face down, at random</small>`;
-    b.onclick=()=>{ Sound.click(); A.innerHTML="";
-      const row=document.createElement("div"); row.className="stepper"; row.style.cssText="background:var(--cream);color:var(--ink);border-radius:14px;padding:6px 10px;";
-      row.innerHTML=`<button data-d="-1" aria-label="Fewer">−</button><output>${n}</output><button data-d="1" aria-label="More">+</button><span class="hint">of ${tgt.count}</span>`;
-      row.addEventListener("click",e=>{ const s=e.target.closest("button"); if(!s||!s.dataset.d) return; n=Math.max(1,Math.min(max,n+(+s.dataset.d))); takeCount=n; row.querySelector("output").textContent=n; });
-      const ok=document.createElement("button"); ok.className="btn go"; ok.textContent="Take"; ok.onclick=()=>{ Sound.draw(); socket.emit("take",{count:n}); };
-      const no=document.createElement("button"); no.className="btn ghost"; no.textContent="Cancel"; no.onclick=()=>renderAce(null);
-      A.append(row,ok,no); };
+    const tgt=S.players[g.takeFrom];
+    const b=document.createElement("button"); b.className="btn warn";
+    b.innerHTML=`Ask for all of ${esc(tgt.name)}’s cards 🤫<small>${tgt.count} card${tgt.count===1?"":"s"}, face down</small>`;
+    b.onclick=()=>{ Sound.click();
+      confirmBox(`Ask ${tgt.name} for all ${tgt.count} cards?`,tgt.name+" has to agree. If they do, the cards come to you face down and "+tgt.name+" escapes. Everyone will see the number of cards only.","Ask",()=>{ Sound.draw(); socket.emit("take"); }); };
     A.appendChild(b);
   }
+  const rq=g.takeReq;
+  if(rq && rq.from===S.me){
+    const w=document.createElement("div"); w.className="btn ghost"; w.style.cursor="default";
+    w.innerHTML=`Waiting for ${esc(nm(rq.to))} to answer…<small>${rq.n} cards</small>`;
+    const c=document.createElement("button"); c.className="btn"; c.textContent="Cancel"; c.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:false}); };
+    A.append(w,c);
+  }
+  // the giver gets asked once per request
+  const rqKey=rq?`${rq.from}-${rq.to}-${rq.n}`:"";
+  if(rq && rq.to===S.me && askedKey!==rqKey){ askedKey=rqKey; Sound.msg();
+    confirmBox(`${nm(rq.from)} wants to take all ${rq.n} of your cards`,"If you agree, your cards go to them face down and you escape the game. Nobody else sees which cards they are.","Give them",()=>{ socket.emit("takeAnswer",{accept:true}); });
+    $("#confirmNo").textContent="Keep my cards"; $("#confirmNo").onclick=()=>{ $("#confirmOverlay").classList.add("hidden"); socket.emit("takeAnswer",{accept:false}); }; }
+  if(!rq && askedKey){ askedKey=""; if($("#confirmYes").textContent==="Give them") $("#confirmOverlay").classList.add("hidden"); }
 
   // animations: card flies to the table; a picked-up trick flies to the picker
   if(pg){
@@ -1050,6 +1061,7 @@ function askRemove(p){
     "Remove", ()=>{ socket.emit("kick",{target:p.index}); if(playerOpen!=="manage") closePlayer(); });
 }
 function confirmBox(title,text,yes,fn){
+  $("#confirmNo").textContent="Cancel";
   $("#confirmTitle").textContent=title; $("#confirmText").textContent=text; $("#confirmYes").textContent=yes;
   $("#confirmYes").onclick=()=>{ $("#confirmOverlay").classList.add("hidden"); fn(); };
   $("#confirmNo").onclick=()=>$("#confirmOverlay").classList.add("hidden");
@@ -1086,7 +1098,7 @@ function renderWait(){
   $("#waitGame").textContent=GAME_NAME[S.gameType]||"Wildcard";
   $("#aceRules").style.display=S.gameType==="ace"?"block":"none";
   if(S.gameType==="ace" && !window.__cardsLoaded){ window.__cardsLoaded=true; new Image().src="/cards.webp"; }
-  $("#takeRule").textContent="On your turn you may also take random face-down cards from the next player.";
+  $("#takeRule").textContent="On your turn you may ask the next player for all their cards. If they agree, the cards come to you face down and they escape.";
   $("#cutRule").textContent=S.hiddenCut?"In this room, cut cards are played face down — only the cutter and the player who picks up see them.":"In this room, cut cards are played face up for everyone to see.";
   const seats=$("#seatList"); seats.innerHTML="";
   const amHostW=(S.hostId===socket.id);
