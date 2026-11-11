@@ -207,9 +207,8 @@
   .hand{display:flex;justify-content:center;min-width:min-content;padding:0 8px;}
   .hand .card{margin-left:var(--ov,6px);}
   .hand .card:first-child{margin-left:0;}
-  .hand.mine .card.playable{transform:translateY(-14px);box-shadow:0 0 0 3px var(--gold),0 10px 18px rgba(0,0,0,.5);}
-  .hand.mine .card.playable:active{transform:translateY(-20px) scale(1.04);}
-  .hand.mine .card.dim{filter:brightness(.62) saturate(.55);transform:translateY(4px);}
+  .hand.mine .card:hover{transform:translateY(-10px);}
+  .hand.mine .card:active{transform:translateY(-14px) scale(1.04);}
   .handcount{text-align:center;font-size:13px;color:var(--cream-2);opacity:.8;}
 
   /* overlays */
@@ -276,16 +275,13 @@
   @keyframes bigpop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-8deg);}14%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(2deg);}
     22%{transform:translate(-50%,-50%) scale(1) rotate(0);}82%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-62%) scale(.92);}}
 
-  /* it's your turn: hand area glows and the playable cards bounce */
+  /* it's your turn: hand area glows (cards are not highlighted — you pick yourself) */
   .mebar{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:16px;padding:2px 0 0;}
   .mebar .ava{width:32px;height:32px;font-size:15px;border-width:2px;}
   .mebar .pill2{background:rgba(255,246,230,.12);padding:0 10px;border-radius:999px;font-size:14px;}
   #gameScreen.myturn .mebar .ava{box-shadow:0 0 0 4px var(--gold),0 0 18px var(--gold);animation:nudge 1s ease-in-out infinite;}
   #gameScreen.myturn .handwrap{background:linear-gradient(180deg,rgba(255,207,74,0) 0%,rgba(255,207,74,.22) 100%);animation:handglow 1.6s ease-in-out infinite;}
   @keyframes handglow{50%{background-color:rgba(255,207,74,.06);}}
-  #gameScreen.myturn .hand .card.playable{animation:cardhop 1.4s ease-in-out infinite;}
-  #gameScreen.myturn .hand .card.playable:nth-child(2n){animation-delay:.15s;}
-  #gameScreen.myturn .hand .card.playable:nth-child(3n){animation-delay:.3s;}
   @keyframes cardhop{0%,100%{transform:translateY(-12px);}50%{transform:translateY(-20px);}}
   #gameScreen:not(.myturn) .hand{filter:saturate(.75) brightness(.85);}
   .flycard{position:fixed;z-index:60;pointer-events:none;margin:0 !important;}
@@ -512,12 +508,10 @@ function canPlay(card,active,top){
   if(card.kind==="num"&&top.kind==="num"&&card.val===top.val)return true;
   if(card.kind!=="num"&&card.kind===top.kind)return true; return false;
 }
-// Same rule as the server: on a +2 → +2 or +4; on a +4 → only +4.
+// Same rule as the server: +2 only on a +2, +4 only on a +4.
 function canStack(card,top){
-  if(!top) return false;
-  if(top.kind==="wild4") return card.kind==="wild4";
-  if(top.kind==="draw2") return card.kind==="draw2"||card.kind==="wild4";
-  return false;
+  if(!top||(top.kind!=="draw2"&&top.kind!=="wild4")) return false;
+  return card.kind===top.kind;
 }
 const COLOR_ORDER={red:0,yellow:1,green:2,blue:3,wild:4};
 const KIND_ORDER={num:0,skip:1,reverse:2,draw2:3,wild:4,wild4:5};
@@ -538,7 +532,7 @@ function connect(){
   socket.on("lobby",rooms=>renderLobby(rooms));
   socket.on("state",st=>{ const prev=S; S=st; renderState(prev); });
   socket.on("err",m=>{ Sound.error(); toast(m); });
-  socket.on("drewPlayable",()=>toast("You drew a playable card — play it or pass"));
+  socket.on("drewPlayable",()=>toast("You drew a card — play it or pass"));
   socket.on("chat",m=>addChat(m));
   socket.on("voiceRoster",r=>{ renderVoiceRoster(r); if(S&&S.started) renderSeats(); });
   socket.on("voice-peers",({peers})=>{ peers.forEach(id=>createPeer(id,true)); });
@@ -771,8 +765,8 @@ function renderState(prev){
   const who=$("#who");
   if(g.over){ who.textContent=g.winner+" won the round"; who.className="who"; }
   else if(myTurn){ who.className="who me";
-    who.textContent = chain ? (stackable?`Stack a ${g.top.kind==="wild4"?"+4":"+2 or +4"}, or draw ${g.pendingDraw}`:`You must draw ${g.pendingDraw} cards`)
-                   : g.drew ? "Play it, or pass" : (hand.some(c=>canPlay(c,g.activeColor,g.top))?"Your turn — tap a glowing card":"Your turn — no match, draw a card");
+    who.textContent = chain ? (stackable?`Stack a ${g.top.kind==="wild4"?"+4":"+2"}, or draw ${g.pendingDraw}`:`You must draw ${g.pendingDraw} cards`)
+                   : g.drew ? "Play it, or pass" : "Your turn — play a card or draw";
   } else { who.className="who"; who.textContent=(victim?victim.name:"…")+(chain?` must draw ${g.pendingDraw} or stack`:" is playing"); }
   const log=(g.log||[]).filter(Boolean); $("#log").textContent=log.length?log[log.length-1]:"";
 
@@ -789,9 +783,8 @@ function renderState(prev){
   const items=hand.map((c,i)=>({c,i})).sort((a,b)=>sortKey(a.c)-sortKey(b.c));
   items.forEach(({c,i})=>{ const el=cardEl(c);
     const ok=myTurn && (chain ? canStack(c,g.top) : canPlay(c,g.activeColor,g.top));
-    if(myTurn) el.classList.add(ok?"playable":"dim");
     el.onclick=()=>{ if(!myTurn) return;
-      if(!ok){ Sound.error(); toast(chain?(g.top.kind==="wild4"?"Only a +4 can go on a +4":"Only a +2 or +4 can be stacked"):"That card doesn’t match"); return; }
+      if(!ok){ Sound.error(); toast(chain?(g.top.kind==="wild4"?"Only a +4 can go on a +4":"Only a +2 can go on a +2"):"That card doesn’t match"); return; }
       if(c.color==="wild"){ pendingPlay=i; openColorPicker(i); }
       else { playSound(c); socket.emit("play",{handIndex:i}); } };
     H.appendChild(el); });
@@ -813,7 +806,9 @@ function renderState(prev){
         add("Draw a card","",()=>{Sound.draw();socket.emit("draw");});
       }
     }
-    const canPreCall = meP && !meP.saidUno && ((myTurn && meP.count===2 && !chain) || meP.vulnerable);
+    // Show UNO only when one of my 2 cards can actually be played now (or I'm already on 1 card and haven't called it)
+    const canGoToOne = myTurn && meP && meP.count===2 && hand.some(c=>chain?canStack(c,g.top):canPlay(c,g.activeColor,g.top));
+    const canPreCall = meP && !meP.saidUno && (canGoToOne || meP.vulnerable);
     if(canPreCall){ const u=document.createElement("button"); u.className="unobtn"; u.textContent="UNO!"; u.title="Call UNO";
       u.onclick=()=>{ Sound.uno(); socket.emit("callUno"); u.remove(); }; A.appendChild(u); }
     S.players.forEach(p=>{ if(p.index!==S.me && p.vulnerable) A.appendChild(catchButton(p,"btn warn",`Catch ${esc(p.name)}!`,"forgot UNO")); });
