@@ -1,7 +1,7 @@
 /**
  * ACE (Kazhutha) — the Kerala trick game.
  *
- *  - All 52 cards are dealt. The player holding the A♠ leads it to start.
+ *  - All 52 cards are dealt. The player holding the A♠ starts, with any card they like.
  *  - Everyone must follow the suit that was led. Ace is high (A K Q J 10 … 2).
  *  - If everyone follows suit, the trick is thrown away and the highest card leads next.
  *  - If someone can't follow, they "cut" with any card. The trick stops right there and
@@ -20,6 +20,7 @@ function cardName(c) { return rankName(c.r) + SUIT_SYM[c.s]; }
 function isAceOfSpades(c) { return c.s === "S" && c.r === 14; }
 
 module.exports = function createAce({ io, pushState, shuffle }) {
+  const M = (k, p = {}) => ({ k, p });
 
   function buildDeck() {
     const d = [];
@@ -28,9 +29,9 @@ module.exports = function createAce({ io, pushState, shuffle }) {
   }
   const alive = (room, i) => room.players[i] && room.players[i].hand.length > 0;
 
-  function emit(room, kind, index, text) {
+  function emit(room, kind, index, m) {
     const p = room.players[index]; if (!p) return;
-    io.to(room.id).emit("react", { kind, index, name: p.name, text });
+    io.to(room.id).emit("react", { kind, index, name: p.name, m });
   }
 
   // Seats that take part in a trick: everyone with cards, clockwise from the leader.
@@ -61,7 +62,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     room.aceTally = room.aceTally || {};
     room.started = true;
     beginTrick(room, starter);
-    pushState(room, `New game of Ace! ${room.players[starter].name} has the A♠ and starts.`);
+    pushState(room, M("ace.start", { name: room.players[starter].name }));
     onTurn(room);
   }
 
@@ -76,7 +77,6 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     if (!card) return { ok: false, msg: "Card not found" };
 
     if (g.trick.length === 0) {
-      if (g.firstTrick && !isAceOfSpades(card)) return { ok: false, msg: "The first card must be the A♠" };
     } else if (card.s !== g.ledSuit && p.hand.some(c => c.s === g.ledSuit)) {
       return { ok: false, msg: `You must follow suit — play a ${SUIT_SYM[g.ledSuit]}` };
     }
@@ -85,7 +85,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     g.trick.push({ p: pIndex, card });
     if (g.trick.length === 1) {
       g.ledSuit = card.s;
-      pushState(room, `${p.name} led ${cardName(card)}`);
+      pushState(room, M("ace.led", { name: p.name, card: cardName(card) }));
     }
 
     // Couldn't follow suit → cut
@@ -93,18 +93,18 @@ module.exports = function createAce({ io, pushState, shuffle }) {
       const picker = highestOfLed(g);
       g.result = { kind: "cut", by: pIndex, picker, count: g.trick.length };
       // With "face down" cuts the card is never named in the log or pop-up
-      const how = room.hiddenCut ? "cut face down" : `cut with ${cardName(card)}`;
-      pushState(room, `${p.name} ${how}! ${room.players[picker].name} picks up ${g.trick.length} cards`);
-      emit(room, "cut", pIndex, `${how} ✂️`);
-      emit(room, "pickup", picker, `picked up ${g.trick.length} cards 😭`);
+      const cp = { name: p.name, card: room.hiddenCut ? "" : cardName(card), picker: room.players[picker].name, n: g.trick.length };
+      pushState(room, M(room.hiddenCut ? "ace.cutHidden" : "ace.cut", cp));
+      emit(room, "cut", pIndex, M(room.hiddenCut ? "r.cutHidden" : "r.cut", cp));
+      emit(room, "pickup", picker, M("r.pickup", { n: g.trick.length }));
       return finishLater(room), { ok: true };
     }
-    if (g.trick.length > 1) pushState(room, `${p.name} played ${cardName(card)}`);
+    if (g.trick.length > 1) pushState(room, M("ace.played", { name: p.name, card: cardName(card) }));
 
     if (g.trick.length === g.order.length) {
       const top = highestOfLed(g);
       g.result = { kind: "clear", picker: top, count: g.trick.length };
-      pushState(room, `Everyone followed — trick thrown away. ${room.players[top].name} leads next`);
+      pushState(room, M("ace.cleared", { name: room.players[top].name }));
       return finishLater(room), { ok: true };
     }
     g.cur = g.order[g.trick.length];
@@ -137,8 +137,8 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     g.takeReq = { from: pIndex, to: t, n, at: Date.now(), timer: null };
     g.takeReq.timer = setTimeout(() => takeAnswer(room, t, false, "timeout"), victim.isAI ? 1500 : TAKE_WAIT_MS);
     if (victim.isAI) { clearTimeout(g.takeReq.timer); g.takeReq.timer = setTimeout(() => takeAnswer(room, t, true), 1500); }
-    pushState(room, `${room.players[pIndex].name} asks to take all ${n} of ${victim.name}'s cards 🤫`);
-    emit(room, "takeAsk", pIndex, `wants to take all ${n} of ${victim.name}'s cards 🤫`);
+    pushState(room, M("ace.takeAsk", { name: room.players[pIndex].name, target: victim.name, n }));
+    emit(room, "takeAsk", pIndex, M("r.takeAsk", { target: victim.name, n }));
     return { ok: true };
   }
   function clearTakeReq(g) { if (g && g.takeReq) { clearTimeout(g.takeReq.timer); g.takeReq = null; } }
@@ -150,21 +150,21 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     const taker = room.players[r.from], giver = room.players[r.to];
     clearTakeReq(g);
     if (!accept) {
-      const txt = pIndex === r.from ? `${taker.name} cancelled the request` : why === "timeout" ? `${giver.name} didn't answer — request dropped` : `${giver.name} kept their cards 🙅`;
-      pushState(room, txt);
-      emit(room, "takeNo", r.to, pIndex === r.from ? "— request cancelled" : why === "timeout" ? "didn't answer in time ⏳" : "kept their cards 🙅");
+      const kk = pIndex === r.from ? "takeCancel" : why === "timeout" ? "takeTimeout" : "takeNo";
+      pushState(room, M("ace." + kk, { name: pIndex === r.from ? taker.name : giver.name }));
+      emit(room, "takeNo", pIndex === r.from ? r.from : r.to, M("r." + kk));
       return { ok: true };
     }
     const n = giver.hand.length;
     taker.hand.push(...shuffle(giver.hand.splice(0)));
-    pushState(room, `${giver.name} gave all ${n} cards to ${taker.name} 🤝`);
-    emit(room, "takeYes", r.from, `took all ${n} of ${giver.name}'s cards 🤝`);
+    pushState(room, M("ace.takeYes", { giver: giver.name, taker: taker.name, n }));
+    emit(room, "takeYes", r.from, M("r.takeYes", { giver: giver.name, n }));
     if (giver.hand.length === 0) {
       g.order = g.order.filter(i => i !== r.to);
       g.escaped.push(r.to);
       const place = g.escaped.length;
-      pushState(room, `${giver.name} escaped ${ordinal(place)}! 🏃`);
-      emit(room, "escape", r.to, `escaped ${ordinal(place)}! 🎉`);
+      pushState(room, M("ace.escaped", { name: giver.name, place }));
+      emit(room, "escape", r.to, M("r.escape", { place }));
       const left = room.players.map((_, i) => i).filter(i => alive(room, i));
       if (left.length <= 1) end(room, left.length ? left[0] : -1);
     }
@@ -194,14 +194,19 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     const inTrick = g.order.slice();
     g.trick = []; g.ledSuit = null; g.result = null; g.firstTrick = false;
 
+    // Everyone emptied their hand in the same trick → whoever held the highest card
+    // (the one who would have had to lead again) is the Kazhutha.
+    const nobodyLeft = room.players.every((_, i) => !alive(room, i));
     for (const i of inTrick) {
+      if (nobodyLeft && i === picker) continue;
       if (!alive(room, i) && !g.escaped.includes(i)) {
         g.escaped.push(i);
         const place = g.escaped.length;
-        pushState(room, `${room.players[i].name} escaped ${ordinal(place)}! 🏃`);
-        emit(room, "escape", i, `escaped ${ordinal(place)}! 🎉`);
+        pushState(room, M("ace.escaped", { name: room.players[i].name, place }));
+        emit(room, "escape", i, M("r.escape", { place }));
       }
     }
+    if (nobodyLeft) return end(room, picker);
     const left = room.players.map((_, i) => i).filter(i => alive(room, i));
     if (left.length <= 1) return end(room, left.length ? left[0] : -1);
 
@@ -226,10 +231,10 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     };
     if (loser >= 0) {
       const name = room.players[loser].name;
-      pushState(room, `${name} is the Kazhutha! 🐴`);
-      emit(room, "kazhutha", loser, "is the Kazhutha! 🐴");
+      pushState(room, M("ace.kazhutha", { name }));
+      emit(room, "kazhutha", loser, M("r.kazhutha"));
     } else {
-      pushState(room, "Everyone escaped together — no Kazhutha this time!");
+      pushState(room, M("ace.noKazhutha"));
     }
   }
 
@@ -249,7 +254,6 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     const g = room.game, me = g.cur, hand = room.players[me].hand;
     const pick = (c) => play(room, me, hand.indexOf(c));
     if (g.trick.length === 0) {
-      if (g.firstTrick) return pick(hand.find(isAceOfSpades));
       const bySuit = {}; hand.forEach(c => (bySuit[c.s] = bySuit[c.s] || []).push(c));
       const longest = Object.values(bySuit).sort((a, b) => b.length - a.length)[0];
       return pick(longest.reduce((a, b) => (b.r < a.r ? b : a)));

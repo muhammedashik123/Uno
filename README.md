@@ -96,8 +96,8 @@ Advanced rules (all on):
   computer player take over.
 - **2-card warning:** when any player gets down to 2 cards, everyone else sees an alert and that
   player's seat glows amber, so nobody misses a forgotten UNO call.
-- **Player notes:** tap any opponent to mark them ("No red", "Might have +4", or your own text). Everyone
-  except that player sees the note on their seat and gets an alert.
+- **Private notes:** tap any opponent to jot a note ("No red", "Might have +4", or your own text). Only you
+  can see your notes; nobody is alerted.
 - **Host tools:** the room creator gets a 👥 **Players** button in the top bar listing everyone, each with
   a **Remove** button (also: ✕ in the waiting room, or tap a seat → Remove).
   Mid-round a computer player takes over the removed player's cards. Anyone can leave with the 🚪 button.
@@ -114,11 +114,19 @@ Advanced rules (all on):
 Not included (easy to add later): the 7-0 rule, jump-in, and a cumulative match target (e.g.
 first to 500).
 
+## Look & language
+
+- **Utsavam theme:** maroon ground with kasavu border stripes, a green felt table with a gold rim and brass
+  lamps, Baloo Chettan 2 for Malayalam text.
+- **Language per player:** English or മലയാളം, chosen in the lobby (or the button in the top bar). It changes the
+  commentary, pop-ups, buttons and seat labels for that player only, and is remembered on that device.
+  Commentary is sent from the server as message keys, so every player reads it in their own language.
+
 ## Ace ♠ (Kerala Kazhutha)
 
 Pick **Ace** when you create a room (2–12 players). The rules live in `ace.js`.
 
-- All 52 cards are dealt. Whoever holds the **A♠** leads it to start.
+- All 52 cards are dealt. Whoever holds the **A♠** starts, and may lead any card.
 - Everyone must **follow the suit** that was led. Ace is high (A K Q J 10 … 2).
 - If everyone follows suit, the cards are thrown away and the player with the highest card leads next.
 - If you can't follow suit, you **cut** with any card. The trick stops there, and whoever played the
@@ -128,7 +136,8 @@ Pick **Ace** when you create a room (2–12 players). The rules live in `ace.js`
 - **Taking cards:** on your turn, before playing, you may ask the next player for **all** their cards. They
   accept or decline (computer players accept). If they agree, the cards come to you face down and they escape.
   Everyone only ever sees the number of cards, never which ones.
-- Empty your hand to **escape**. The last player still holding cards is the **Kazhutha** 🐴.
+- Empty your hand to **escape**. The last player still holding cards is the **Kazhutha** 🐴. If everyone empties
+  their hand in the same final trick, the player who held the highest card of that trick is the Kazhutha.
 - The end screen shows the escape order and how many times each player has been the Kazhutha in this room.
 
 **Card art:** the Ace cards use `public/cards.webp`, a single image holding all 52 card faces, made from

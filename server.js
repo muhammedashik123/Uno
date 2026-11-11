@@ -36,11 +36,13 @@ const MOCK = {
   last:    ["came last with {n} cards 😭", "is the last one standing — {n} cards 🥲"],
   caught:  ["forgot to say UNO — +{n} 🤦", "got caught napping — +{n} 😴"],
 };
-function mockLine(kind, n) { const a = MOCK[kind]; return a[Math.floor(Math.random() * a.length)].replace("{n}", n); }
+// Commentary is sent as { k: key, p: params } and turned into English or Malayalam on each player's screen.
+function M(k, p = {}) { return { k, p }; }
+function mockLine(kind, n) { const i = Math.floor(Math.random() * MOCK[kind].length); return M(`mock.${kind}.${i}`, { n }); }
 // Everyone in the room sees this pop-up (the victim too).
 function react(room, kind, index, n, extra = {}) {
   const p = room.players[index]; if (!p) return;
-  io.to(room.id).emit("react", { kind, index, name: p.name, text: mockLine(kind, n), ...extra });
+  io.to(room.id).emit("react", { kind, index, name: p.name, m: mockLine(kind, n), ...extra });
 }
 
 const COLORS = ["red", "yellow", "green", "blue"];
@@ -118,7 +120,7 @@ function startGame(room) {
   };
   room.started = true;
   broadcastLobby();
-  pushState(room, `Round started! ${room.players[starter].name} goes first (picked at random).`);
+  pushState(room, M("wc.start", { name: room.players[starter].name }));
   onTurn(room);
 }
 function topCard(g) { return g.discard[g.discard.length - 1]; }
@@ -207,16 +209,15 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   g.activeColor = card.color === "wild" ? (chosenColor || "red") : card.color;
   closeUnoWindow(room, pIndex);
 
-  let msg = `${p.name} played ${describe(card)}`;
+  const mp = { name: p.name, card };
   let skip = false, reversed = false;
   if (card.kind === "skip") { skip = true; }
   else if (card.kind === "reverse") { g.dir *= -1; reversed = true; if (activeCount(room) === 2 && p.hand.length > 0) skip = true; }
-  else if (card.kind === "draw2") { g.pendingDraw += 2; msg += ` — +${g.pendingDraw} pending`; }
+  else if (card.kind === "draw2") { g.pendingDraw += 2; mp.pending = g.pendingDraw; }
   else if (card.kind === "wild4") {
-    g.pendingDraw += 4;
-    msg += ` (color ${g.activeColor}) — +${g.pendingDraw} pending`;
+    g.pendingDraw += 4; mp.color = g.activeColor; mp.pending = g.pendingDraw;
   }
-  else if (card.kind === "wild") { msg += ` (color ${g.activeColor})`; }
+  else if (card.kind === "wild") { mp.color = g.activeColor; }
 
   // Out of cards → this player finishes and the round carries on without them
   let finishedNow = false;
@@ -225,10 +226,10 @@ function playCard(room, pIndex, handIndex, chosenColor) {
     if (g.unoVuln === pIndex) clearUnoVuln(g);
     g.finished.push(pIndex);
     const place = g.finished.length;
-    msg += ` — and finished ${ordinal(place)}! 🎉`;
+    mp.place = place;
     if (activeCount(room) <= 1) {
-      pushState(room, msg);
-      io.to(room.id).emit("react", { kind: "finish", index: pIndex, name: p.name, text: `finished ${ordinal(place)}! 🎉` });
+      pushState(room, M("wc.played", mp));
+      io.to(room.id).emit("react", { kind: "finish", index: pIndex, name: p.name, m: M("r.finish", { place }) });
       endRound(room, room.players.findIndex((_, i) => !isOut(g, i)));
       return { ok: true };
     }
@@ -238,15 +239,15 @@ function playCard(room, pIndex, handIndex, chosenColor) {
   if (finishedNow) { p.saidUno = false; }
   else if (p.hand.length === 1) {
     if (p.isAI || p.saidUno) { p.saidUno = true; }
-    else { openUnoVuln(room, pIndex); p.saidUno = false; msg += ` — UNO?`; }
+    else { openUnoVuln(room, pIndex); p.saidUno = false; mp.uno = true; }
   } else { p.saidUno = false; }
 
   const victim = skip ? nextIndex(room, 1) : -1;
   advance(room, skip ? 2 : 1);
-  pushState(room, msg);
-  if (reversed) io.to(room.id).emit("react", { kind: "reverse", index: pIndex, name: p.name, dir: g.dir, text: "reversed the direction 🔄" });
+  pushState(room, M("wc.played", mp));
+  if (reversed) io.to(room.id).emit("react", { kind: "reverse", index: pIndex, name: p.name, dir: g.dir, m: M("r.reverse") });
   if (victim >= 0 && victim !== pIndex) react(room, "skip", victim, 0, { by: p.name });
-  if (finishedNow) io.to(room.id).emit("react", { kind: "finish", index: pIndex, name: p.name, text: `finished ${ordinal(g.finished.length)}! 🎉` });
+  if (finishedNow) io.to(room.id).emit("react", { kind: "finish", index: pIndex, name: p.name, m: M("r.finish", { place: g.finished.length }) });
   onTurn(room);
   return { ok: true };
 }
@@ -261,7 +262,7 @@ function drawTurn(room, pIndex) {
     drawFor(room, pIndex, n);
     g.pendingDraw = 0;
     advance(room, 1);
-    pushState(room, `${room.players[pIndex].name} drew ${n} and lost the turn`);
+    pushState(room, M("wc.drewN", { name: room.players[pIndex].name, n }));
     react(room, "draw", pIndex, n);
     onTurn(room);
     return { ok: true, drewPile: true };
@@ -272,10 +273,10 @@ function drawTurn(room, pIndex) {
   const card = p.hand[p.hand.length - 1];
   if (canPlay(card, g.activeColor, topCard(g))) {
     g.drewThisTurn = true;
-    pushState(room, `${p.name} drew a card`);
+    pushState(room, M("wc.drew", { name: p.name }));
     return { ok: true, canPlayDrawn: true };
   }
-  advance(room, 1); pushState(room, `${p.name} drew and passed`); onTurn(room);
+  advance(room, 1); pushState(room, M("wc.drewPass", { name: p.name })); onTurn(room);
   return { ok: true, canPlayDrawn: false };
 }
 // You can only pass after drawing a card this turn, and never while a +2/+4 is waiting.
@@ -285,7 +286,7 @@ function passTurn(room, pIndex) {
   if (g.pendingDraw > 0) return { ok: false, msg: `You must draw ${g.pendingDraw} cards (or stack)` };
   if (!g.drewThisTurn) return { ok: false, msg: "Draw a card first" };
   closeUnoWindow(room, pIndex);
-  advance(room, 1); pushState(room, `${room.players[pIndex].name} passed`); onTurn(room);
+  advance(room, 1); pushState(room, M("wc.pass", { name: room.players[pIndex].name })); onTurn(room);
   return { ok: true };
 }
 
@@ -298,7 +299,7 @@ function catchUno(room, byIndex, targetIndex) {
   if (t.saidUno || t.hand.length !== 1) { clearUnoVuln(g); return { ok: false }; }
   drawFor(room, targetIndex, UNO_PENALTY);
   clearUnoVuln(g);
-  pushState(room, `${room.players[byIndex].name} caught ${t.name} — +${UNO_PENALTY} for not saying UNO!`);
+  pushState(room, M("wc.caught", { by: room.players[byIndex].name, name: t.name, n: UNO_PENALTY }));
   react(room, "caught", targetIndex, UNO_PENALTY, { by: room.players[byIndex].name });
   return { ok: true };
 }
@@ -310,7 +311,7 @@ function callUno(room, pIndex) {
   const top = topCard(g);
   const playableNow = g.cur === pIndex && p.hand.length === 2 &&
     p.hand.some(c => g.pendingDraw > 0 ? canStack(c, top) : canPlay(c, g.activeColor, top));
-  if (p.hand.length === 1 || playableNow) { p.saidUno = true; if (g.unoVuln === pIndex) clearUnoVuln(g); pushState(room, `${p.name}: UNO!`); }
+  if (p.hand.length === 1 || playableNow) { p.saidUno = true; if (g.unoVuln === pIndex) clearUnoVuln(g); pushState(room, M("wc.uno", { name: p.name })); }
 }
 
 // The round ends when only one player still has cards: they come last.
@@ -330,7 +331,7 @@ function endRound(room, loserIndex) {
     loserCards: loser ? loser.hand.length : 0,
     tally: room.players.map(p => ({ name: p.name, ...(room.wcTally[p.name] || { wins: 0, lasts: 0 }) })),
   };
-  pushState(room, loser ? `${g.winner} won! ${loser.name} came last with ${loser.hand.length} cards.` : `${g.winner} won!`);
+  pushState(room, loser ? M("wc.won", { winner: g.winner, loser: loser.name, n: loser.hand.length }) : M("wc.wonAll", { winner: g.winner }));
   if (loser) react(room, "last", loserIndex, loser.hand.length);
 }
 function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -431,8 +432,8 @@ function stateFor(room, socketId) {
       saidUno: !!p.saidUno,
       vulnerable: g ? (g.unoVuln === i) : false,
       catchIn: g && g.unoVuln === i ? Math.max(0, g.unoVulnAt + CATCH_DELAY_MS - now) : 0,
-      // marks other players left on this seat — never shown to the player they're about
-      notes: i === me ? [] : (room.notes[p.id] || []).map(n => ({ id: n.id, text: n.text, by: n.byName, mine: n.by === socketId })),
+      // private notes: each player only ever sees the notes they wrote themselves
+      notes: i === me ? [] : (room.notes[p.id] || []).filter(n => n.by === socketId).map(n => ({ id: n.id, text: n.text, by: n.byName, mine: true })),
     })),
   };
   if (g && g.type === "ace") {
@@ -444,7 +445,7 @@ function stateFor(room, socketId) {
     const top = topCard(g);
     base.game = {
       activeColor: g.activeColor, top, cur: g.cur, dir: g.dir,
-      over: g.over, winner: g.winner, deckCount: g.deck.length, lastMsg: g.log[g.log.length - 1] || "",
+      over: g.over, winner: g.winner, deckCount: g.deck.length,
       pendingDraw: g.pendingDraw,
       finished: g.finished.slice(),
       drew: g.drewThisTurn,
@@ -457,7 +458,7 @@ function stateFor(room, socketId) {
   return base;
 }
 function pushState(room, msg) {
-  if (room.game && msg) { room.game.log.push(msg); if (room.game.log.length > 30) room.game.log.shift(); }
+  if (room.game && msg) { room.game.log.push(typeof msg === "string" ? M("raw", { text: msg }) : msg); if (room.game.log.length > 30) room.game.log.shift(); }
   for (const p of room.players) { if (p.isAI || !p.connected) continue; io.to(p.id).emit("state", stateFor(room, p.id)); }
 }
 
@@ -504,7 +505,7 @@ io.on("connection", (socket) => {
     joinRoom(socket, room, name || "Player");
     cb && cb({ ok: true, roomId: room.id });
     broadcastLobby();
-    pushState(room, `${name || "Player"} joined`);
+    pushState(room, M("joined", { name: name || "Player" }));
   });
 
   socket.on("startGame", () => {
@@ -577,20 +578,17 @@ io.on("connection", (socket) => {
     socket.data.lastNote = now;
     const list = room.notes[t.id] || (room.notes[t.id] = []);
     list.push({ id: genId(), by: socket.id, byName: room.players[by].name, text: clean, ts: now });
-    while (list.length > NOTES_PER_PLAYER) list.shift();
-    // alert everyone except the player being marked
-    for (const p of room.players) {
-      if (p.isAI || !p.connected || p.id === t.id) continue;
-      io.to(p.id).emit("noteAlert", { by: room.players[by].name, target: t.name, targetIndex: target, text: clean, mine: p.id === socket.id });
-    }
-    pushState(room, "");
+    // keep the last few notes per author on this seat
+    const mine = list.filter(n => n.by === socket.id);
+    while (mine.length > NOTES_PER_PLAYER) { const old = mine.shift(); list.splice(list.indexOf(old), 1); }
+    io.to(socket.id).emit("state", stateFor(room, socket.id));
   });
   socket.on("noteRemove", ({ target, id }) => {
     const room = rooms.get(socket.data.roomId); if (!room) return;
     const t = room.players[target]; if (!t) return;
     const list = room.notes[t.id] || [];
-    const i = list.findIndex(n => n.id === id && (n.by === socket.id || room.hostId === socket.id));
-    if (i >= 0) { list.splice(i, 1); pushState(room, ""); }
+    const i = list.findIndex(n => n.id === id && n.by === socket.id);
+    if (i >= 0) { list.splice(i, 1); io.to(socket.id).emit("state", stateFor(room, socket.id)); }
   });
 
   // ---- host removes a player ----
@@ -603,7 +601,7 @@ io.on("connection", (socket) => {
     if (t.isAI) {
       if (inRound) { socket.emit("err", "Computer players can be removed between rounds"); return; }
       room.players.splice(target, 1);
-      pushState(room, `${t.name} was removed`); broadcastLobby(); return;
+      pushState(room, M("removed", { name: t.name })); broadcastLobby(); return;
     }
     const ts = io.sockets.sockets.get(t.id);
     if (ts) { ts.emit("kicked", { by: nameFor(room, socket.id) }); }
@@ -643,7 +641,7 @@ io.on("connection", (socket) => {
     if (room.hostId === oldId) room.hostId = socket.id;
     socket.leave("lobby"); socket.join(room.id); socket.data.roomId = room.id;
     cb && cb({ ok: true });
-    pushState(room, oldId === socket.id ? "" : `${p.name} is back 👋`);
+    pushState(room, oldId === socket.id ? "" : M("back", { name: p.name }));
     broadcastVoiceRoster(room);
   });
 });
@@ -669,7 +667,7 @@ function handleDisconnect(socket) {
     p.graceTimer = null;
     if (!p.connected && p.id === sid) removeSocketFromRoom(null, room, sid, "left");
   }, RECONNECT_GRACE_MS);
-  pushState(room, `${p.name} lost connection — waiting for them to come back…`);
+  pushState(room, M("lostConn", { name: p.name }));
 }
 function handleLeave(socket) {
   const room = rooms.get(socket.data.roomId);
@@ -696,11 +694,11 @@ function removeSocketFromRoom(socket, room, sid, why) {
     p.isAI = true;
     p.id = "AI_" + genId();   // the old socket no longer controls this seat
     p.name += why === "removed" ? " (removed)" : " (left)";
-    pushState(room, `${p.name.replace(/ \((left|removed)\)$/, "")} ${why === "removed" ? "was removed by the host" : "left the game"}`);
+    pushState(room, M(why === "removed" ? "removed" : "leftGame", { name: p.name.replace(/ \((left|removed)\)$/, "") }));
     if (room.game.cur === idx) onTurn(room);
   } else {
     room.players.splice(idx, 1);
-    pushState(room, why === "removed" ? `${p.name} was removed by the host` : `${p.name} left`);
+    pushState(room, M(why === "removed" ? "removed" : "left", { name: p.name }));
   }
   if (room.players.filter(p => !p.isAI).length === 0) {
     if (room.game) { clearTurnTimer(room.game); clearUnoVuln(room.game); ace.stop(room.game); room.game.over = true; }
