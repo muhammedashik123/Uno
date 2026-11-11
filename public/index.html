@@ -14,6 +14,7 @@
 <link rel="icon" href="/logo.svg">
 <title>Wildcard — play online</title>
 <meta name="theme-color" content="#1c120b">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -406,6 +407,7 @@
           <div class="stepper" id="aiStep"><button data-d="-1" aria-label="Fewer computer players">−</button><output>0</output><button data-d="1" aria-label="More computer players">+</button></div></div>
         <button class="btn go" id="createBtn" style="width:100%;margin-top:4px;">Create room</button>
       </div>
+      <p style="text-align:center;color:rgba(255,246,230,.45);font-size:12px;margin:4px 0 0;">Wildcard &amp; Ace · version 3.4</p>
     </div>
   </div>
 
@@ -414,6 +416,7 @@
     <div class="wrap">
       <div class="sheet" style="text-align:center;">
         <div id="waitGame" style="font-size:20px;font-weight:800;margin-bottom:4px;"></div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:6px;">version 3.4</div>
         <div class="lbl">Room code — share it with friends</div>
         <p class="codebig" id="roomCode"></p>
         <div class="lbl" id="seatCount" style="margin-top:8px;"></div>
@@ -599,10 +602,22 @@ function avatar(p){ const letter=p.isAI&&p.connected!==false&&!/\((left|removed)
 const COLOR_HEX={red:"var(--red)",yellow:"var(--yellow)",green:"var(--green)",blue:"var(--blue)"};
 
 /* ---- connect ---- */
+const SESSION_KEY="wildcard_session";
+function saveSession(){ try{ if(S&&S.roomId&&S.token) localStorage.setItem(SESSION_KEY,JSON.stringify({roomId:S.roomId,token:S.token,name:myName})); }catch(e){} }
+function clearSession(){ try{ localStorage.removeItem(SESSION_KEY); }catch(e){} }
 function connect(){
   socket=io();
+  // first connection or a reconnect after the phone slept: get back into the seat
+  socket.on("connect",()=>{
+    $("#toast").style.display="none";
+    let sess=null; try{ sess=JSON.parse(localStorage.getItem(SESSION_KEY)||"null"); }catch(e){}
+    if(!sess) return;
+    if(sess.name && !myName) myName=sess.name;
+    socket.emit("rejoin",sess,res=>{ if(!(res&&res.ok)){ clearSession(); if(S) backToLobby(); } });
+  });
+  socket.on("disconnect",()=>{ if(S){ const t=$("#toast"); t.textContent="Connection lost — reconnecting…"; t.style.display="block"; clearTimeout(toast._t); } });
   socket.on("lobby",rooms=>renderLobby(rooms));
-  socket.on("state",st=>{ const prev=S; S=st; renderState(prev); });
+  socket.on("state",st=>{ const prev=S; S=st; if(st.me>=0&&st.players[st.me]) myName=st.players[st.me].name; saveSession(); renderState(prev); });
   socket.on("err",m=>{ Sound.error(); toast(m); });
   socket.on("drewPlayable",()=>toast("You drew a card — play it or pass"));
   socket.on("chat",m=>addChat(m));
@@ -629,7 +644,7 @@ function seatEl(i){ return document.querySelector(`.seat[data-i="${i}"]`); }
 function onReact(ev){
   if(!S||!S.started) return;
   const you=ev.index===S.me, who=you?"You":esc(ev.name);
-  if(you) ev.text=String(ev.text).replace(/^is /,"are ");
+  if(you) ev.text=String(ev.text).replace(/^(is|wants|picks|takes|has) /,(m,v)=>({is:"are",wants:"want",picks:"pick",takes:"take",has:"have"})[v]+" ");
   if(ev.kind==="reverse"){
     const da=$("#dirArrow"); da.classList.remove("flip"); void da.offsetWidth; da.classList.add("flip");
     Sound.special(); bigPop("🔄",`${who} reversed the direction`); return;
@@ -759,14 +774,15 @@ function renderSeats(){
     const th = 1.5*Math.PI - spread/2 + spread*(k+0.5)/m;
     const x=cx+rx*Math.cos(th), y=cy+ry*Math.sin(th);
     const d=document.createElement("div");
-    const gone=/\(left\)/.test(p.name);
+    const gone=/\((left|removed)\)/.test(p.name) || (!p.isAI && p.connected===false);
     const escIdx=isAce?(g.escaped||[]).indexOf(pi):fin.indexOf(pi);
     const donkey=isAce?(g.over&&g.loser===pi):(g.over&&fin.length&&!fin.includes(pi));
     d.className="seat "+size+(g.cur===pi&&!g.over?" turn":"")+(nextIdx===pi&&g.cur!==pi&&!g.over?" next":"")
       +(!isAce&&escIdx<0&&p.count===2?" low":"")+(!isAce&&escIdx<0&&p.count===1?" one":"")+(gone?" gone":"")+(escIdx>=0?" escaped":"")+(donkey?" donkey":"");
     d.dataset.i=pi; d.style.left=x+"%"; d.style.top=y+"%";
     const place=escIdx>=0?`${escIdx+1}${["st","nd","rd"][escIdx]||"th"}`:"";
-    const tag = donkey ? `<span class="tag" style="background:var(--alert)">${isAce?"Kazhutha 🐴":"Last 😭"}</span>`
+    const tag = (!p.isAI && p.connected===false) ? `<span class="tag" style="background:var(--amber);color:var(--ink)">reconnecting…</span>`
+              : donkey ? `<span class="tag" style="background:var(--alert)">${isAce?"Kazhutha 🐴":"Last 😭"}</span>`
               : escIdx>=0 ? `<span class="tag" style="background:var(--green)">${isAce?"Escaped "+place:(escIdx===0?"🏆 ":"")+place}</span>`
               : g.cur===pi&&!g.over ? `<span class="tag t">Playing</span>`
               : nextIdx===pi&&!g.over ? `<span class="tag t">Next</span>`
@@ -989,6 +1005,13 @@ function renderAce(prev){
     w.innerHTML=`Waiting for ${esc(nm(rq.to))} to answer…<small>${rq.n} cards</small>`;
     const c=document.createElement("button"); c.className="btn"; c.textContent="Cancel"; c.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:false}); };
     A.append(w,c);
+  }
+  if(rq && rq.to===S.me){
+    const y=document.createElement("button"); y.className="btn go"; y.innerHTML=`Give all ${rq.n} cards to ${esc(nm(rq.from))}<small>you escape</small>`;
+    y.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:true}); };
+    const n2=document.createElement("button"); n2.className="btn danger"; n2.textContent="Keep my cards";
+    n2.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:false}); };
+    A.append(y,n2);
   }
   // the giver gets asked once per request
   const rqKey=rq?`${rq.from}-${rq.to}-${rq.n}`:"";
@@ -1254,7 +1277,7 @@ $("#aiStep").addEventListener("click",e=>{ const b=e.target.closest("button"); i
   aiSeats=Math.max(0,Math.min(maxPlayers-1,aiSeats+(+b.dataset.d))); syncSteppers(); });
 syncSteppers();
 
-function backToLobby(){ leaveAllComms(); socket.emit("leaveRoom"); S=null; discardKey=""; clearAlerts(); closePlayer();
+function backToLobby(){ leaveAllComms(); socket.emit("leaveRoom"); clearSession(); S=null; discardKey=""; clearAlerts(); closePlayer();
   $("#confirmOverlay").classList.add("hidden"); $("#colorOverlay").classList.add("hidden"); $("#gameScreen").classList.remove("myturn");
   ["micBtn","chatToggle","leaveBtn","playersBtn"].forEach(id=>$("#"+id).classList.add("hide")); document.body.classList.remove("inroom"); $("#roomTag").textContent="";
   $("#endOverlay").classList.add("hidden"); show("lobbyScreen"); socket.emit("listRooms"); }
