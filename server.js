@@ -527,9 +527,14 @@ io.on("connection", (socket) => {
       : playCard(room, idxOf(room, socket.id), handIndex, color);
     if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
-  socket.on("take", ({ count }) => {
+  socket.on("take", () => {
     const room = rooms.get(socket.data.roomId); if (!room || room.gameType !== "ace") return;
-    const r = ace.take(room, idxOf(room, socket.id), count);
+    const r = ace.take(room, idxOf(room, socket.id));
+    if (!r.ok && r.msg) socket.emit("err", r.msg);
+  });
+  socket.on("takeAnswer", ({ accept }) => {
+    const room = rooms.get(socket.data.roomId); if (!room || room.gameType !== "ace") return;
+    const r = ace.takeAnswer(room, idxOf(room, socket.id), !!accept);
     if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
   socket.on("draw", () => {

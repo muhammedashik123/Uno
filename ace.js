@@ -41,6 +41,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
   }
   function beginTrick(room, leader) {
     const g = room.game;
+    clearTakeReq(g);
     g.trick = []; g.ledSuit = null; g.result = null;
     g.order = trickOrder(room, leader);
     g.cur = g.order[0];
@@ -69,6 +70,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     if (!g || g.type !== "ace" || g.over) return { ok: false };
     if (g.result) return { ok: false, msg: "Wait — the trick is being cleared" };
     if (g.cur !== pIndex) return { ok: false, msg: "Not your turn" };
+    if (g.takeReq && g.takeReq.from === pIndex) return { ok: false, msg: `Waiting for ${room.players[g.takeReq.to].name} to answer — or cancel the request` };
     const p = room.players[pIndex];
     const card = p.hand[handIndex];
     if (!card) return { ok: false, msg: "Card not found" };
@@ -117,29 +119,52 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     for (let k = 1; k < n; k++) { const i = (from + k) % n; if (alive(room, i)) return i; }
     return -1;
   }
-  function take(room, pIndex, count) {
+  // Taking the next player's whole hand needs both sides to agree:
+  // the taker asks, the giver accepts or declines. Everyone only ever sees card counts.
+  const TAKE_WAIT_MS = 30000;
+  function take(room, pIndex) {
     const g = room.game;
     if (!g || g.type !== "ace" || g.over) return { ok: false };
     if (!room.allowTake) return { ok: false, msg: "Taking cards is off in this room" };
     if (g.result) return { ok: false, msg: "Wait — the trick is being cleared" };
     if (g.cur !== pIndex) return { ok: false, msg: "Not your turn" };
-    if (g.tookSeq === g.turnSeq) return { ok: false, msg: "You already took cards this turn" };
+    if (g.takeReq) return { ok: false, msg: "There is already a request waiting" };
+    if (g.tookSeq === g.turnSeq) return { ok: false, msg: "You already asked this turn" };
     const t = nextAlive(room, pIndex);
     if (t < 0) return { ok: false, msg: "Nobody to take from" };
-    const victim = room.players[t];
-    const n = Math.max(1, Math.min(parseInt(count, 10) || 1, victim.hand.length));
-    const taken = [];
-    for (let k = 0; k < n; k++) taken.push(victim.hand.splice(Math.floor(Math.random() * victim.hand.length), 1)[0]);
-    room.players[pIndex].hand.push(...taken);
+    const victim = room.players[t], n = victim.hand.length;
     g.tookSeq = g.turnSeq;
-    pushState(room, `${room.players[pIndex].name} took ${n} card${n === 1 ? "" : "s"} from ${victim.name} 🤫`);
-    emit(room, "take", pIndex, `took ${n} card${n === 1 ? "" : "s"} from ${victim.name} 🤫`);
-    if (victim.hand.length === 0) {
-      g.order = g.order.filter(i => i !== t);          // they were still due to play this trick
-      g.escaped.push(t);
+    g.takeReq = { from: pIndex, to: t, n, at: Date.now(), timer: null };
+    g.takeReq.timer = setTimeout(() => takeAnswer(room, t, false, "timeout"), victim.isAI ? 1500 : TAKE_WAIT_MS);
+    if (victim.isAI) { clearTimeout(g.takeReq.timer); g.takeReq.timer = setTimeout(() => takeAnswer(room, t, true), 1500); }
+    pushState(room, `${room.players[pIndex].name} asks to take all ${n} of ${victim.name}'s cards 🤫`);
+    emit(room, "takeAsk", pIndex, `wants to take all ${n} of ${victim.name}'s cards 🤫`);
+    return { ok: true };
+  }
+  function clearTakeReq(g) { if (g && g.takeReq) { clearTimeout(g.takeReq.timer); g.takeReq = null; } }
+  // pIndex is the giver answering, or the taker cancelling (accept = false)
+  function takeAnswer(room, pIndex, accept, why) {
+    const g = room.game; const r = g && g.takeReq;
+    if (!g || g.over || !r) return { ok: false, msg: "Nothing to answer" };
+    if (pIndex !== r.to && !(pIndex === r.from && !accept)) return { ok: false, msg: "Not your request" };
+    const taker = room.players[r.from], giver = room.players[r.to];
+    clearTakeReq(g);
+    if (!accept) {
+      const txt = pIndex === r.from ? `${taker.name} cancelled the request` : why === "timeout" ? `${giver.name} didn't answer — request dropped` : `${giver.name} kept their cards 🙅`;
+      pushState(room, txt);
+      emit(room, "takeNo", r.to, pIndex === r.from ? "— request cancelled" : why === "timeout" ? "didn't answer in time ⏳" : "kept their cards 🙅");
+      return { ok: true };
+    }
+    const n = giver.hand.length;
+    taker.hand.push(...shuffle(giver.hand.splice(0)));
+    pushState(room, `${giver.name} gave all ${n} cards to ${taker.name} 🤝`);
+    emit(room, "takeYes", r.from, `took all ${n} of ${giver.name}'s cards 🤝`);
+    if (giver.hand.length === 0) {
+      g.order = g.order.filter(i => i !== r.to);
+      g.escaped.push(r.to);
       const place = g.escaped.length;
-      pushState(room, `${victim.name} escaped ${ordinal(place)}! 🏃`);
-      emit(room, "escape", t, `escaped ${ordinal(place)}! 🎉`);
+      pushState(room, `${giver.name} escaped ${ordinal(place)}! 🏃`);
+      emit(room, "escape", r.to, `escaped ${ordinal(place)}! 🎉`);
       const left = room.players.map((_, i) => i).filter(i => alive(room, i));
       if (left.length <= 1) end(room, left.length ? left[0] : -1);
     }
@@ -208,7 +233,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     }
   }
 
-  function stop(g) { if (!g) return; clearTimeout(g.timer); clearTimeout(g.timer2); g.timer = g.timer2 = null; }
+  function stop(g) { if (!g) return; clearTimeout(g.timer); clearTimeout(g.timer2); g.timer = g.timer2 = null; clearTakeReq(g); }
 
   function onTurn(room) {
     const g = room.game; if (!g || g.over || g.result || g.cur < 0) return;
@@ -249,7 +274,8 @@ module.exports = function createAce({ io, pushState, shuffle }) {
       }),
       hiddenCut: !!room.hiddenCut,
       allowTake: !!room.allowTake,
-      canTake: !!room.allowTake && !g.over && !g.result && g.cur === me && g.tookSeq !== g.turnSeq && nextAlive(room, me) >= 0,
+      canTake: !!room.allowTake && !g.over && !g.result && !g.takeReq && g.cur === me && g.tookSeq !== g.turnSeq && nextAlive(room, me) >= 0,
+      takeReq: g.takeReq ? { from: g.takeReq.from, to: g.takeReq.to, n: g.takeReq.n, left: Math.max(0, g.takeReq.at + TAKE_WAIT_MS - Date.now()) } : null,
       takeFrom: nextAlive(room, me),
       ledSuit: g.ledSuit, firstTrick: g.firstTrick, result: g.result,
       thrown: g.thrown, escaped: g.escaped.slice(), loser: g.loser,
@@ -258,7 +284,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     };
   }
 
-  return { start, play, take, onTurn, stop, stateFor, MAX_PLAYERS };
+  return { start, play, take, takeAnswer, onTurn, stop, stateFor, MAX_PLAYERS };
 };
 
 function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
