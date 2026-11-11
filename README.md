@@ -122,6 +122,11 @@ Pick **Ace** when you create a room (2–12 players). The rules live in `ace.js`
   highest card of the led suit **picks up the whole trick** and leads next.
 - **Cut face up or face down:** the host picks this when creating the room. Face down hides the cut card
   from everyone except the cutter (the player who picks up sees it once it's in their hand).
+- **Taking cards:** on your turn, before playing, you may take random face-down cards from
+  the next player. Nobody sees which cards moved; everyone sees "Ashik took 2 cards from Ravi 🤫". Once per turn.
 - Empty your hand to **escape**. The last player still holding cards is the **Kazhutha** 🐴.
 - The end screen shows the escape order and how many times each player has been the Kazhutha in this room.
+
+**Card art:** the Ace cards use `public/cards.webp`, a single image holding all 52 card faces, made from
+the public-domain *Vector Playing Cards* by Byron Knoll (via github.com/hayeah/playing-cards-assets).
 

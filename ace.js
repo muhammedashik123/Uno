@@ -55,7 +55,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     room.game = {
       type: "ace", cur: starter, dir: 1, over: false, log: [],
       trick: [], ledSuit: null, order: [], result: null, firstTrick: true,
-      thrown: 0, escaped: [], loser: -1, turnSeq: 0, timer: null, timer2: null,
+      thrown: 0, escaped: [], loser: -1, turnSeq: 0, timer: null, timer2: null, tookSeq: -1,
     };
     room.aceTally = room.aceTally || {};
     room.started = true;
@@ -108,6 +108,41 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     g.cur = g.order[g.trick.length];
     pushState(room, "");
     onTurn(room);
+    return { ok: true };
+  }
+
+  // Optional house rule: on your turn you may take random, face-down cards from the next player.
+  function nextAlive(room, from) {
+    const n = room.players.length;
+    for (let k = 1; k < n; k++) { const i = (from + k) % n; if (alive(room, i)) return i; }
+    return -1;
+  }
+  function take(room, pIndex, count) {
+    const g = room.game;
+    if (!g || g.type !== "ace" || g.over) return { ok: false };
+    if (!room.allowTake) return { ok: false, msg: "Taking cards is off in this room" };
+    if (g.result) return { ok: false, msg: "Wait — the trick is being cleared" };
+    if (g.cur !== pIndex) return { ok: false, msg: "Not your turn" };
+    if (g.tookSeq === g.turnSeq) return { ok: false, msg: "You already took cards this turn" };
+    const t = nextAlive(room, pIndex);
+    if (t < 0) return { ok: false, msg: "Nobody to take from" };
+    const victim = room.players[t];
+    const n = Math.max(1, Math.min(parseInt(count, 10) || 1, victim.hand.length));
+    const taken = [];
+    for (let k = 0; k < n; k++) taken.push(victim.hand.splice(Math.floor(Math.random() * victim.hand.length), 1)[0]);
+    room.players[pIndex].hand.push(...taken);
+    g.tookSeq = g.turnSeq;
+    pushState(room, `${room.players[pIndex].name} took ${n} card${n === 1 ? "" : "s"} from ${victim.name} 🤫`);
+    emit(room, "take", pIndex, `took ${n} card${n === 1 ? "" : "s"} from ${victim.name} 🤫`);
+    if (victim.hand.length === 0) {
+      g.order = g.order.filter(i => i !== t);          // they were still due to play this trick
+      g.escaped.push(t);
+      const place = g.escaped.length;
+      pushState(room, `${victim.name} escaped ${ordinal(place)}! 🏃`);
+      emit(room, "escape", t, `escaped ${ordinal(place)}! 🎉`);
+      const left = room.players.map((_, i) => i).filter(i => alive(room, i));
+      if (left.length <= 1) end(room, left.length ? left[0] : -1);
+    }
     return { ok: true };
   }
 
@@ -213,6 +248,9 @@ module.exports = function createAce({ io, pushState, shuffle }) {
         return room.hiddenCut && isCut && t.p !== me ? { p: t.p, hidden: true } : { p: t.p, card: t.card };
       }),
       hiddenCut: !!room.hiddenCut,
+      allowTake: !!room.allowTake,
+      canTake: !!room.allowTake && !g.over && !g.result && g.cur === me && g.tookSeq !== g.turnSeq && nextAlive(room, me) >= 0,
+      takeFrom: nextAlive(room, me),
       ledSuit: g.ledSuit, firstTrick: g.firstTrick, result: g.result,
       thrown: g.thrown, escaped: g.escaped.slice(), loser: g.loser,
       winner: g.loser >= 0 ? room.players[g.loser].name : "",
@@ -220,7 +258,7 @@ module.exports = function createAce({ io, pushState, shuffle }) {
     };
   }
 
-  return { start, play, onTurn, stop, stateFor, MAX_PLAYERS };
+  return { start, play, take, onTurn, stop, stateFor, MAX_PLAYERS };
 };
 
 function ordinal(n) { const s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }

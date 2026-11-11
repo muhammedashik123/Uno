@@ -78,6 +78,7 @@ function createRoom(hostName, opts = {}) {
     id, name: opts.name || `${hostName}'s room`,
     gameType: opts.gameType === "ace" ? "ace" : "wildcard",
     hiddenCut: opts.gameType === "ace" && !!opts.hiddenCut,   // Ace: cut card played face down
+    allowTake: opts.gameType === "ace",   // Ace: you may always take face-down cards from the next player
     maxPlayers: Math.min(opts.gameType === "ace" ? 12 : MAX_PLAYERS, Math.max(2, parseInt(opts.maxPlayers, 10) || 4)),
     started: false, hostId: null, players: [], game: null,
     voice: new Set(), chat: [], notes: {}, createdAt: Date.now(),
@@ -413,7 +414,7 @@ function stateFor(room, socketId) {
   const me = room.players.findIndex(p => p.id === socketId);
   const now = Date.now();
   const base = {
-    roomId: room.id, roomName: room.name, started: room.started, hostId: room.hostId, gameType: room.gameType, hiddenCut: !!room.hiddenCut,
+    roomId: room.id, roomName: room.name, started: room.started, hostId: room.hostId, gameType: room.gameType, hiddenCut: !!room.hiddenCut, allowTake: !!room.allowTake,
     maxPlayers: room.maxPlayers, me,
     players: room.players.map((p, i) => ({
       index: i, name: p.name, isAI: p.isAI, connected: p.connected,
@@ -471,8 +472,8 @@ io.on("connection", (socket) => {
 
   socket.on("listRooms", () => socket.emit("lobby", publicRoomList()));
 
-  socket.on("createRoom", ({ name, roomName, maxPlayers, aiSeats, gameType, hiddenCut }, cb) => {
-    const room = createRoom(name || "Player", { name: roomName, maxPlayers, gameType, hiddenCut });
+  socket.on("createRoom", ({ name, roomName, maxPlayers, aiSeats, gameType, hiddenCut, allowTake }, cb) => {
+    const room = createRoom(name || "Player", { name: roomName, maxPlayers, gameType, hiddenCut, allowTake });
     room.hostId = socket.id;
     joinRoom(socket, room, name || "Player");
     const ai = Math.max(0, Math.min((room.maxPlayers - 1), aiSeats || 0));
@@ -524,6 +525,11 @@ io.on("connection", (socket) => {
     const r = room.gameType === "ace"
       ? ace.play(room, idxOf(room, socket.id), handIndex)
       : playCard(room, idxOf(room, socket.id), handIndex, color);
+    if (!r.ok && r.msg) socket.emit("err", r.msg);
+  });
+  socket.on("take", ({ count }) => {
+    const room = rooms.get(socket.data.roomId); if (!room || room.gameType !== "ace") return;
+    const r = ace.take(room, idxOf(room, socket.id), count);
     if (!r.ok && r.msg) socket.emit("err", r.msg);
   });
   socket.on("draw", () => {
