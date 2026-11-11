@@ -17,37 +17,41 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Baloo+Chettan+2:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --red:#ef3346; --yellow:#ffc21a; --green:#22a85a; --blue:#1f7be0;
     --red-d:#b81d2f; --yellow-d:#d99500; --green-d:#157a40; --blue-d:#1559a8;
-    --wood:#1c120b; --wood-2:#2b1b10; --rim:#5a3a22;
-    --felt:#126450; --felt-d:#0b4034;
-    --cream:#fff6e6; --cream-2:#f1e4cc; --ink:#22180f; --muted:#8a7660;
-    --gold:#ffcf4a; --amber:#ff9a1f; --alert:#e8283d;
+    --wood:#1d060b; --wood-2:#3a0b14; --rim:#6b3b16;
+    --felt:#0f6a49; --felt-d:#0a4a33;
+    --cream:#fff2cf; --cream-2:#f3e1b6; --ink:#3b1a05; --muted:#8a6a3a;
+    --gold:#f5d77a; --gold-d:#a3741a; --amber:#f0a030; --alert:#c0392b;
     --cw:76px; --ch:114px;
     --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
     --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
-    --font:"Baloo 2",ui-rounded,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    --font:"Baloo Chettan 2","Baloo 2",ui-rounded,"Noto Sans Malayalam","Nirmala UI","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;overflow:hidden;}
   body{font-family:var(--font);color:var(--cream);user-select:none;-webkit-user-select:none;touch-action:manipulation;
-    position:fixed;inset:0;background:radial-gradient(130% 90% at 50% 0%,#3a2516 0%,var(--wood) 70%);}
+    position:fixed;inset:0;background:radial-gradient(110% 70% at 50% 8%,#5a1320 0%,#3a0b14 55%,#1d060b 100%);}
+  /* kasavu border stripes top and bottom */
+  body::before,body::after{content:"";position:fixed;left:0;right:0;height:9px;z-index:3;pointer-events:none;
+    background:repeating-linear-gradient(90deg,#f5d77a 0 16px,#8a0f1e 16px 22px,#f5d77a 22px 38px,#2a0a0e 38px 43px);}
+  body::before{top:0;} body::after{bottom:0;}
   button{font-family:inherit;}
   :focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
   #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);}
 
   /* top bar */
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;}
-  .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:22px;letter-spacing:.2px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 12px 6px;}
+  .logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:22px;letter-spacing:.2px;color:var(--gold);text-shadow:0 2px 0 #7a2a10;}
   .logo .mark{width:30px;height:30px;border-radius:8px;transform:rotate(-8deg);display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;
     background:conic-gradient(var(--red) 0 25%,var(--blue) 0 50%,var(--yellow) 0 75%,var(--green) 0);box-shadow:0 3px 0 rgba(0,0,0,.35);}
-  .roomtag{font-size:13px;font-weight:700;color:var(--cream-2);background:rgba(255,255,255,.08);padding:2px 10px;border-radius:999px;letter-spacing:1px;}
+  .roomtag{font-size:13px;font-weight:800;color:var(--ink);background:var(--gold);padding:2px 10px;border-radius:999px;letter-spacing:1px;}
   .roomtag:empty{display:none;}
   .topbar .right{display:flex;gap:6px;}
-  .iconbtn{width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,246,230,.16);background:rgba(255,246,230,.07);
+  .iconbtn{width:42px;height:42px;border-radius:12px;border:1.5px solid rgba(245,215,122,.45);background:rgba(245,215,122,.1);
     color:var(--cream);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
   .iconbtn:active{transform:scale(.93);}
   .iconbtn.live{background:var(--green);border-color:#8fe3b0;}
@@ -56,15 +60,15 @@
 
   /* buttons + inputs */
   .btn{appearance:none;border:none;cursor:pointer;font-weight:800;border-radius:14px;padding:11px 20px;font-size:16px;line-height:1.1;
-    color:var(--ink);background:var(--cream);box-shadow:0 4px 0 #bba98b;transition:transform .08s;}
-  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #bba98b;}
+    color:var(--ink);background:var(--cream);box-shadow:0 4px 0 #c9b283;transition:transform .08s;}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #c9b283;}
   .btn.go{color:#fff;background:var(--green);box-shadow:0 4px 0 var(--green-d);}
   .btn.go:active{box-shadow:0 1px 0 var(--green-d);}
-  .btn.warn{color:var(--ink);background:var(--gold);box-shadow:0 4px 0 #c69400;}
+  .btn.warn{color:var(--ink);background:linear-gradient(180deg,#ffe6a1,#f0c24a);border:2px solid var(--gold);box-shadow:0 4px 0 var(--gold-d);}
   .btn.danger{color:#fff;background:var(--red);box-shadow:0 4px 0 var(--red-d);}
   .btn.ghost{color:var(--cream);background:rgba(255,246,230,.1);box-shadow:none;border:1px solid rgba(255,246,230,.2);}
   .btn:disabled{opacity:.45;cursor:default;}
-  .btn small{display:block;font-size:11px;font-weight:600;opacity:.8;}
+  .btn small{display:block;font-size:11px;font-weight:600;opacity:.8;margin-top:3px;line-height:1.2;}
   input{font-family:inherit;font-size:16px;padding:11px 14px;border-radius:12px;border:2px solid transparent;background:var(--cream);color:var(--ink);width:100%;}
   input:focus{border-color:var(--gold);outline:none;}
   input::placeholder{color:var(--muted);}
@@ -123,7 +127,7 @@
   .card .plus4{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:#fff;font-size:calc(var(--cw)*.34);
     -webkit-text-stroke:2px #1d1d24;paint-order:stroke fill;}
   .card.back .face{background:#2a1a10;}
-  .card.back .oval{background:var(--red);}
+  .card.back .oval{background:#8a0f1e;}
   .card.back .logo2{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2;transform:rotate(-28deg);}
   .card.back .logo2 span{font-weight:800;font-style:italic;font-size:calc(var(--cw)*.28);color:var(--gold);text-shadow:2px 2px 0 rgba(0,0,0,.35);}
   .card.justplayed{animation:slap .35s cubic-bezier(.3,1.5,.5,1);}
@@ -133,14 +137,56 @@
   #gameScreen{display:flex;flex-direction:column;overflow:hidden;}
   .table{position:relative;flex:1;min-height:260px;}
   .felt{position:absolute;left:4%;right:4%;top:14%;bottom:2%;border-radius:50%;
-    background:radial-gradient(70% 70% at 50% 45%,#187a62 0%,var(--felt) 55%,var(--felt-d) 100%);
-    box-shadow:0 0 0 10px var(--rim),0 0 0 13px #2b1a0e,0 18px 40px rgba(0,0,0,.55),inset 0 0 50px rgba(0,0,0,.4);}
+    background:radial-gradient(70% 60% at 50% 40%,#1f8a63 0%,var(--felt) 55%,var(--felt-d) 100%);
+    box-shadow:0 0 0 9px var(--rim),0 0 0 13px var(--gold),0 0 0 16px #4a2210,0 24px 50px rgba(0,0,0,.6),inset 0 0 70px rgba(0,0,0,.45);}
+  .felt::after{content:"";position:absolute;inset:14px;border-radius:50%;border:2px dashed rgba(245,215,122,.3);}
+  /* brass lamps on the rim, flames flicker */
+  .lamp{position:absolute;top:9%;width:30px;height:46px;display:flex;flex-direction:column;align-items:center;z-index:4;pointer-events:none;}
+  .lamp.l{left:6%;} .lamp.r{right:6%;}
+  .lamp i{display:block;width:10px;height:16px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+    background:radial-gradient(circle at 50% 70%,#fff3b0,#ffb13b 60%,rgba(255,120,0,0) 100%);box-shadow:0 0 14px #ffb13b;animation:flame 1.3s ease-in-out infinite;}
+  .lamp.r i{animation-delay:.5s;}
+  .lamp b{display:block;width:22px;height:6px;border-radius:50%;background:#c58a2b;}
+  .lamp u{display:block;width:6px;height:12px;background:#c58a2b;}
+  @keyframes flame{0%,100%{transform:scaleY(1) translateX(0);opacity:.95;}30%{transform:scaleY(1.15) translateX(-1px);}60%{transform:scaleY(.9) translateX(1px);opacity:.8;}}
+  @media (max-width:460px){ .lamp{display:none;} }
 
   .seat{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;z-index:5;
     width:88px;text-align:center;transition:left .3s,top .3s;}
   .seat .ring{position:relative;border-radius:50%;padding:3px;}
+  /* opponents drawn as people holding a fan of cards */
+  .seat .person{width:84px;height:94px;border-radius:16px;padding:0;}
+  .person .head{position:absolute;left:50%;top:0;transform:translateX(-50%);width:40px;height:40px;border-radius:50%;background:#f3c99a;z-index:2;
+    box-shadow:inset 0 -4px 0 rgba(0,0,0,.07),0 3px 6px rgba(0,0,0,.35);transition:transform .25s;}
+  .person .head::before{content:"";position:absolute;left:-1px;right:-1px;top:-2px;height:16px;border-radius:22px 22px 6px 6px;background:#3b2314;}
+  .person .eye{position:absolute;top:19px;width:5px;height:6px;border-radius:50%;background:#2b1a0e;}
+  .person .eye.l{left:12px;} .person .eye.r{right:12px;}
+  .person .mouth{position:absolute;left:50%;top:25px;width:12px;height:6px;border-bottom:2.5px solid #a0532b;border-radius:0 0 12px 12px;transform:translateX(-50%);}
+  .person .torso{position:absolute;left:50%;top:36px;transform:translateX(-50%);width:66px;height:48px;border-radius:32px 32px 12px 12px;background:var(--c,#1d6fb8);
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;padding-top:16px;box-sizing:border-box;z-index:1;box-shadow:0 4px 8px rgba(0,0,0,.35);}
+  .person .fan2{position:absolute;left:50%;bottom:6px;height:30px;width:0;z-index:3;}
+  .person .fan2 i{position:absolute;left:-9px;bottom:0;width:18px;height:26px;border-radius:3px;background:#8a0f1e;border:2px solid #fff;transform-origin:50% 110%;
+    box-shadow:0 1px 3px rgba(0,0,0,.45);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.12) 0 2px,transparent 2px 5px);}
+  .person .hand{position:absolute;bottom:4px;width:15px;height:15px;border-radius:50%;background:#f3c99a;z-index:4;box-shadow:inset 0 -2px 0 rgba(0,0,0,.08),0 2px 3px rgba(0,0,0,.35);transition:bottom .35s,transform .35s;}
+  .person .hand.l{left:13px;} .person .hand.r{right:13px;}
+  .seat .person .cnt{right:-2px;bottom:38px;z-index:5;}
+  .seat.turn .person{filter:drop-shadow(0 0 10px rgba(245,215,122,.9));animation:none;background:none;box-shadow:none;}
+  .seat.turn .person .head{animation:headbob 1.1s ease-in-out infinite;}
+  .seat.turn .person .torso{box-shadow:0 0 0 3px var(--gold),0 4px 8px rgba(0,0,0,.35);}
+  @keyframes headbob{50%{transform:translateX(-50%) translateY(-3px) rotate(-4deg);}}
+  .seat.low .person,.seat.one .person{background:none;animation:none;box-shadow:none;}
+  .seat.low .person .torso{box-shadow:0 0 0 3px var(--amber),0 0 14px var(--amber);}
+  .seat.one .person .torso{box-shadow:0 0 0 3px var(--alert),0 0 14px var(--alert);}
+  .seat.escaped .person{background:none;}
+  .seat.escaped .person .fan2{display:none;}
+  .seat.escaped .person .hand{bottom:66px;transform:scale(1.1);} .seat.escaped .person .hand.l{left:4px;} .seat.escaped .person .hand.r{right:4px;}
+  .seat.escaped .person .mouth{width:16px;height:9px;}
+  .seat.donkey .person{background:none;} .seat.donkey .person .torso{box-shadow:0 0 0 3px var(--alert);}
+  .seat.donkey .person .mouth{transform:translateX(-50%) rotate(180deg) translateY(4px);}
+  .seat.compact .person{transform:scale(.78);transform-origin:50% 100%;height:76px;margin-top:-8px;}
+  .seat.tiny .person{transform:scale(.62);transform-origin:50% 100%;height:60px;margin-top:-14px;}
   .seat .nm{font-size:14px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    background:rgba(28,18,11,.82);padding:0 8px;border-radius:8px;line-height:1.45;}
+    background:rgba(60,20,5,.8);padding:0 8px;border-radius:8px;line-height:1.45;}
   .seat .cnt{position:absolute;right:-8px;bottom:-4px;min-width:26px;height:26px;padding:0 6px;border-radius:13px;
     background:var(--cream);color:var(--ink);font-weight:800;font-size:15px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.4);}
   .seat .tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:800;padding:0 7px;border-radius:8px;white-space:nowrap;line-height:1.5;}
@@ -148,7 +194,8 @@
   .seat .fan i{display:block;width:14px;height:21px;border-radius:3px;background:var(--red);border:2px solid #fff;margin-left:-8px;box-shadow:0 1px 2px rgba(0,0,0,.4);}
   .seat .fan i:first-child{margin-left:0;}
   .seat .vmic{position:absolute;left:-10px;top:-4px;font-size:14px;}
-  .seat.turn .ring{background:var(--gold);box-shadow:0 0 0 4px rgba(255,207,74,.35),0 0 22px rgba(255,207,74,.7);}
+  .seat.turn .ring{background:conic-gradient(var(--gold) 0 75%,rgba(245,215,122,.25) 75%);box-shadow:0 0 0 4px rgba(245,215,122,.3),0 0 22px rgba(245,215,122,.75);animation:ringspin 2.4s linear infinite;}
+  @keyframes ringspin{to{background:conic-gradient(from 360deg,var(--gold) 0 75%,rgba(245,215,122,.25) 75%);}}
   .seat.turn .tag.t{background:var(--gold);color:var(--ink);}
   .seat.next .tag.t{background:rgba(255,246,230,.9);color:var(--ink);}
   .seat.low .ring{background:var(--amber);animation:warnpulse 1.1s ease-in-out infinite;}
@@ -159,9 +206,9 @@
   .seat .catch{margin-top:3px;font-family:inherit;font-weight:800;font-size:14px;border:none;border-radius:10px;padding:3px 10px;
     background:var(--gold);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 #c69400;animation:nudge .9s ease-in-out infinite;}
   @keyframes nudge{50%{transform:translateY(-3px);}}
-  .seat.compact{width:70px;} .seat.compact .ava{width:36px;height:36px;font-size:16px;} .seat.compact .fan{display:none;}
+  .seat.compact{width:70px;} .seat.compact .fan{display:none;}
   .seat.compact .nm{font-size:12px;} .seat.compact .cnt{min-width:22px;height:22px;font-size:13px;}
-  .seat.tiny{width:58px;} .seat.tiny .ava{width:30px;height:30px;font-size:14px;border-width:2px;} .seat.tiny .fan{display:none;}
+  .seat.tiny{width:58px;} .seat.tiny .fan{display:none;}
   .seat.tiny .nm{font-size:11px;padding:0 4px;}
   .floatnum{position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-weight:800;font-size:22px;color:#fff;
     background:var(--alert);padding:0 9px;border-radius:10px;pointer-events:none;animation:floatup 1.6s ease-out forwards;z-index:9;}
@@ -196,7 +243,7 @@
 
   .status{text-align:center;padding:4px 12px 0;min-height:52px;}
   .status .who{font-size:20px;font-weight:800;line-height:1.2;}
-  .status .who.me{color:var(--gold);}
+  .status .who.me{color:var(--gold);text-shadow:0 2px 0 #7a2a10;}
   .status .log{font-size:14px;color:var(--cream-2);opacity:.85;line-height:1.3;}
   .actions{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;padding:6px 10px 2px;min-height:58px;}
   .unobtn{width:62px;height:62px;border-radius:50%;border:4px solid #fff;color:#fff;font-style:italic;font-weight:800;font-size:19px;
@@ -211,6 +258,7 @@
   @media (hover:hover){ .hand.mine .card:hover{transform:translateY(-10px);} }
   .hand.mine .card:active{transform:translateY(-14px) scale(1.04);}
   .hand .card.sel{transform:translateY(-22px) scale(1.06);z-index:5;box-shadow:0 0 0 3px var(--gold),0 12px 22px rgba(0,0,0,.55);}
+  body.ml .hand .card.sel::after{content:"വീണ്ടും ടാപ്പ്";}
   .hand .card.sel::after{content:"Tap again";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);white-space:nowrap;
     font-size:11px;font-weight:800;background:var(--gold);color:var(--ink);padding:1px 7px;border-radius:7px;}
   .handcount{text-align:center;font-size:13px;color:var(--cream-2);opacity:.8;}
@@ -336,6 +384,13 @@
   .trick .slot{display:flex;flex-direction:column;align-items:center;gap:2px;}
   .trick .slot .who2{font-size:11px;font-weight:800;background:rgba(28,18,11,.8);padding:0 6px;border-radius:6px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .trick .slot.cut .card{box-shadow:0 0 0 3px var(--alert),0 0 16px var(--alert);}
+  .trick .slot.cut .card::after{content:"";position:absolute;left:-20%;top:48%;width:140%;height:4px;background:var(--alert);transform:rotate(-30deg);
+    box-shadow:0 0 8px var(--alert);animation:slash .35s ease-out;}
+  @keyframes slash{from{transform:rotate(-30deg) scaleX(0);}to{transform:rotate(-30deg) scaleX(1);}}
+  .table.thump .felt{animation:thump .45s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes thump{30%{transform:translateY(6px) scale(.99);}}
+  .donkey{position:fixed;bottom:calc(10px + var(--safe-b));left:-80px;font-size:52px;z-index:150;pointer-events:none;animation:walk 5s linear forwards;}
+  @keyframes walk{0%{left:-80px;transform:translateY(0);}25%{transform:translateY(-8px);}50%{transform:translateY(0);}75%{transform:translateY(-8px);}100%{left:110%;transform:translateY(0);}}
   .trick .slot.high .card{box-shadow:0 0 0 3px var(--gold),0 0 16px var(--gold);}
   .trick .slot.high .who2{background:var(--alert);}
   .trick.cleared .slot{animation:fadeaway 1.6s ease-in forwards;}
@@ -344,11 +399,11 @@
   .ledchip{position:absolute;left:50%;transform:translateX(-50%);z-index:6;font-weight:800;font-size:15px;white-space:nowrap;
     background:var(--cream);color:var(--ink);padding:1px 12px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.35);}
   .ledchip .sr{color:#d1243a;} .ledchip.hide{display:none;}
-  .seat.escaped{opacity:.6;} .seat.escaped .ring{background:var(--green);}
+  .seat.escaped{opacity:.75;}
   .seat.donkey .ring{background:var(--alert);}
   .bigpop.happy{background:#dff6e7;}
 
-  @media (max-width:460px){ body.inroom .logo .word{display:none;} .iconbtn{width:38px;height:38px;font-size:16px;} }
+  @media (max-width:460px){ body.inroom .logo .word{display:none;} body.inroom #langBtn{display:none;} .iconbtn{width:38px;height:38px;font-size:16px;} }
   @media (min-width:700px){:root{--cw:86px;--ch:129px;}}
   @media (max-height:700px){:root{--cw:62px;--ch:93px;} .status{min-height:44px;} .status .who{font-size:18px;} .mebar{display:none;}}
   @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important;}}
@@ -366,6 +421,7 @@
     <div class="right">
       <button class="iconbtn hide" id="micBtn" title="Voice chat" aria-label="Voice chat">🎤</button>
       <button class="iconbtn hide" id="chatToggle" title="Chat" aria-label="Chat">💬<span class="dot" id="chatDot">0</span></button>
+      <button class="iconbtn" id="langBtn" title="Language" aria-label="Switch language" style="width:auto;padding:0 10px;font-size:13px;font-weight:800;">മലയാളം</button>
       <button class="iconbtn" id="soundBtn" title="Sound" aria-label="Sound on or off">🔊</button>
       <button class="iconbtn hide" id="playersBtn" title="Manage players" aria-label="Manage players">👥</button>
       <button class="iconbtn hide" id="leaveBtn" title="Leave room" aria-label="Leave room">🚪</button>
@@ -378,6 +434,11 @@
       <img class="biglogo" src="/logo.svg" alt="Wildcard">
       <div class="sheet">
         <div class="field" style="margin-top:0"><div class="lbl">Your name</div><input id="nameInput" placeholder="What should we call you?" maxlength="14"></div>
+        <div class="field"><div class="lbl">Language · ഭാഷ</div>
+          <div class="gamepick" id="langPick">
+            <button data-l="en"><b>English</b><span>Commentary and buttons in English.</span></button>
+            <button data-l="ml"><b>മലയാളം</b><span>കളിയിലെ കമന്ററിയും ബട്ടണുകളും മലയാളത്തിൽ.</span></button>
+          </div></div>
         <div class="lbl">Join with a code</div>
         <div class="row">
           <input id="joinCode" placeholder="5-letter code" maxlength="5" style="text-transform:uppercase;letter-spacing:2px;">
@@ -407,7 +468,7 @@
           <div class="stepper" id="aiStep"><button data-d="-1" aria-label="Fewer computer players">−</button><output>0</output><button data-d="1" aria-label="More computer players">+</button></div></div>
         <button class="btn go" id="createBtn" style="width:100%;margin-top:4px;">Create room</button>
       </div>
-      <p style="text-align:center;color:rgba(255,246,230,.45);font-size:12px;margin:4px 0 0;">Wildcard &amp; Ace · version 3.4</p>
+      <p style="text-align:center;color:rgba(255,246,230,.45);font-size:12px;margin:4px 0 0;">Wildcard &amp; Ace · version 4.1 Utsavam</p>
     </div>
   </div>
 
@@ -416,13 +477,13 @@
     <div class="wrap">
       <div class="sheet" style="text-align:center;">
         <div id="waitGame" style="font-size:20px;font-weight:800;margin-bottom:4px;"></div>
-        <div style="color:var(--muted);font-size:12px;margin-bottom:6px;">version 3.4</div>
+        <div style="color:var(--muted);font-size:12px;margin-bottom:6px;">version 4.1</div>
         <div class="lbl">Room code — share it with friends</div>
         <p class="codebig" id="roomCode"></p>
         <div class="lbl" id="seatCount" style="margin-top:8px;"></div>
         <div class="seatgrid" id="seatList"></div>
         <div class="rules" id="aceRules" style="display:none;"><b>How Ace works</b><br>
-          All 52 cards are dealt. Whoever has the <b>A♠</b> starts. Everyone must <b>follow the suit</b> that was led (A is high).
+          All 52 cards are dealt. Whoever has the <b>A♠</b> starts, with any card they like. Everyone must <b>follow the suit</b> that was led (A is high).
           If everyone follows, the cards are thrown away and the highest card leads next.
           If you can’t follow, <b>cut</b> with any card: the trick stops and whoever played the highest card of the suit <b>picks up all of it</b>.
           Empty your hand to escape. The last player holding cards is the <b>Kazhutha</b> 🐴.<br><b id="cutRule" style="font-size:14px;"></b><br><b id="takeRule" style="font-size:14px;"></b></div>
@@ -440,6 +501,8 @@
   <div class="screen hidden" id="gameScreen">
     <div class="table" id="table">
       <div class="felt"></div>
+      <div class="lamp l" aria-hidden="true"><i></i><b></b><u></u><b></b></div>
+      <div class="lamp r" aria-hidden="true"><i></i><b></b><u></u><b></b></div>
       <div class="alerts" id="alerts"></div>
       <div id="seats"></div>
       <div class="dirarrow" id="dirArrow"><svg viewBox="0 0 100 100" aria-hidden="true"><defs><marker id="ah" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="#fff6e6"/></marker></defs>
@@ -501,6 +564,130 @@
 (function(){
 const $=s=>document.querySelector(s);
 let socket, S=null, maxPlayers=4, aiSeats=0, pendingPlay=null, myName="";
+/* ---- language: Malayalam commentary by default, English on tap ---- */
+const T={
+en:{
+  joined:"{name} joined", left:"{name} left", leftGame:"{name} left the game", removed:"{name} was removed by the host",
+  back:"{name} is back 👋", lostConn:"{name} lost connection — waiting for them to come back…", raw:"{text}",
+  "wc.start":"Round started! {name} goes first (picked at random).",
+  "wc.played":"{name} played {card}", "wc.colour":" (colour {color})", "wc.pending":" — +{n} coming", "wc.finished":" — and finished {place}! 🎉", "wc.unoq":" — UNO?",
+  "wc.drewN":"{name} drew {n} and lost the turn", "wc.drew":"{name} drew a card", "wc.drewPass":"{name} drew and passed", "wc.pass":"{name} passed",
+  "wc.caught":"{by} caught {name} — +{n} for not saying UNO!", "wc.uno":"{name}: UNO!",
+  "wc.won":"{winner} won! {loser} came last with {n} cards.", "wc.wonAll":"{winner} won!",
+  "ace.start":"New game of Ace! {name} has the A♠ and starts — any card.", "ace.led":"{name} led {card}", "ace.played":"{name} played {card}",
+  "ace.cut":"{name} cut with {card}! {picker} picks up {n} cards", "ace.cutHidden":"{name} cut face down! {picker} picks up {n} cards",
+  "ace.cleared":"Everyone followed — trick thrown away. {name} leads next", "ace.escaped":"{name} escaped {place}! 🏃",
+  "ace.kazhutha":"{name} is the Kazhutha! 🐴", "ace.noKazhutha":"Everyone escaped together — no Kazhutha this time!",
+  "ace.takeAsk":"{name} asks to take all {n} of {target}’s cards 🤫", "ace.takeCancel":"{name} cancelled the request",
+  "ace.takeTimeout":"{name} didn’t answer — request dropped", "ace.takeNo":"{name} kept their cards 🙅", "ace.takeYes":"{giver} gave all {n} cards to {taker} 🤝",
+  "r.finish":"finished {place}! 🎉", "r.reverse":"reversed the direction 🔄",
+  "r.cut":"cut with {card} ✂️", "r.cutHidden":"cut face down ✂️", "r.pickup":"picked up {n} cards 😭", "r.escape":"escaped {place}! 🎉", "r.kazhutha":"is the Kazhutha! 🐴",
+  "r.takeAsk":"wants to take all {n} of {target}’s cards 🤫", "r.takeCancel":"— request cancelled", "r.takeTimeout":"didn’t answer in time ⏳", "r.takeNo":"kept their cards 🙅", "r.takeYes":"took all {n} of {giver}’s cards 🤝",
+  "mock.skip.0":"got skipped 😢","mock.skip.1":"lost the turn 😭","mock.skip.2":"got skipped — so sad 😿","mock.skip.3":"must sit this one out 🥲",
+  "mock.draw.0":"got +{n} and lost the turn 😭","mock.draw.1":"ate +{n} cards 🥴","mock.draw.2":"took +{n}… ouch 😵","mock.draw.3":"picked up +{n}, no turn 😢",
+  "mock.last.0":"came last with {n} cards 😭","mock.last.1":"is the last one standing — {n} cards 🥲",
+  "mock.caught.0":"forgot to say UNO — +{n} 🤦","mock.caught.1":"got caught napping — +{n} 😴",
+  you:"You", yourTurn:"Your turn", yourTurnBang:"Your turn!", yourTurnPlus:"Your turn — +{n} is coming at you!",
+  playing:"{name} is playing", mustDrawOrStack:"{name} must draw {n} or stack", watching:" · you’re done, watching 👀",
+  wonRound:"{name} won the round", playOrDraw:"Your turn — play a card or draw", playItOrPass:"Play it, or pass",
+  stackOrDraw:"Stack a {k}, or draw {n}", youMustDraw:"You must draw {n} cards",
+  drawCard:"Draw a card", pass:"Pass", drawN:"Draw {n}", drawingN:"Drawing {n}…", autoIn:"auto-draw in {s}s",
+  catchName:"Catch {name}!", forgotUno:"forgot UNO", catchIn:"Catch in {s}s", readyIn:"ready in {s}s", catchBang:"Catch!",
+  tagPlaying:"Playing", tagNext:"Next", tagLast:"Last 😭", tagKazhutha:"Kazhutha 🐴", tagEscaped:"Escaped {place}", tagUno:"UNO!", tag1:"1 card", tag2:"2 left", tagRecon:"reconnecting…",
+  nCards:"{n} cards", oneCard:"1 card", youEscaped:"You escaped 🏃", youFinished:"You finished {place} 🎉",
+  low2:"<b>{name}</b> has 2 cards left. If they forget to call UNO, tap <b>Catch</b>.", calledUno:"<b>{name}</b> called UNO — one card left!",
+  one1:"<b>{name}</b> is on 1 card and hasn’t called UNO. The Catch button opens in 2 seconds.", youDrew:"You drew {n} cards", drewPlayable:"You drew a card — play it or pass",
+  colour:"Colour: {c}", deckLeft:"{n} left", pickColour:"Pick the next colour", youHold:"you hold {n}",
+  noMatch:"That card doesn’t match", only2:"Only a +2 can go on a +2", only4:"Only a +4 can go on a +4", mustFollow:"You must follow suit — play a {s}",
+  leadAny:"Your turn — lead any card", followIf:"Your turn — follow {s} if you can", follow:"Follow", thrown:"{n} thrown away", leadAnyChip:"Lead any card",
+  aceStart:"A♠ holder starts", newTrick:"New trick", picksUp:"picks up", cutLine:"{name} cut! {picker} picks up {n}", clearedLine:"Everyone followed — trick thrown away",
+  isKazhutha:"{name} is the Kazhutha 🐴", youAreKazhutha:"You are the Kazhutha 🐴", noKazhuthaLine:"No Kazhutha this time",
+  askAll:"Ask for all of {name}’s cards 🤫", faceDown:"{n} cards, face down", askTitle:"Ask {name} for all {n} cards?",
+  askText:"{name} has to agree. If they do, the cards come to you face down and {name} escapes. Everyone will see the number of cards only.", ask:"Ask",
+  waiting:"Waiting for {name} to answer…", cancel:"Cancel", giveAll:"Give all {n} cards to {name}", youEscape:"you escape", keepCards:"Keep my cards",
+  giveTitle:"{name} wants to take all {n} of your cards", giveText:"If you agree, your cards go to them face down and you escape the game. Nobody else sees which cards they are.", giveThem:"Give them",
+  endWon:"You won the round!", endLast:"You came last this time", endOther:"{name} won the round", finishOrder:"Finishing order", finished:"finished", lastRow:"Last · {name}", cardsLeft:"{n} cards left", roomSoFar:"This room so far",
+  endKazhuthaYou:"You are the Kazhutha!", endKazhutha:"{name} is the Kazhutha!", endNoKazhutha:"Everyone escaped — no Kazhutha!", escapeOrder:"Escape order", escaped:"escaped", kazhuthaCount:"Kazhutha count in this room",
+  nextRound:"Next round", playAgain:"Play again", backLobby:"Back to lobby", tapAgain:"Tap again", lostConnToast:"Connection lost — reconnecting…",
+  noteSub:"{n} cards in hand. Notes are private — only you can see them.", noNotes:"No notes yet.", noteYou:"you", notePh:"Write your own note", add:"Add",
+  removeFromRoom:"Remove {name} from the room", close:"Close", playersTitle:"Players in this room", playersSub:"You created this room, so you can remove anyone.",
+  youHost:"you · host", replacedByCpu:"replaced by computer", cpuPlayer:"computer player", waitingSeat:"waiting", remove:"Remove", cpuBetween:"Computer players can be removed between rounds.",
+  removeTitle:"Remove {name}?", removeInRound:"A computer player takes over their cards for the rest of this round.", removeWait:"They’ll go back to the lobby.",
+  leaveTitle:"Leave this room?", leaveInRound:"A computer player will take over your cards so the others can keep playing.", leaveWait:"You can join again with the room code.", leaveRoom:"Leave room",
+  langBtn:"മലയാളം", red:"red", yellow:"yellow", green:"green", blue:"blue", spades:"spades", hearts:"hearts", clubs:"clubs", diamonds:"diamonds",
+  skipCard:"Skip", reverseCard:"Reverse", draw2Card:"Draw Two", wildCard:"Wild", wild4Card:"Wild Draw Four",
+},
+ml:{
+  joined:"{name} കളിയിൽ ചേർന്നു", left:"{name} പോയി", leftGame:"{name} കളി വിട്ടു പോയി", removed:"{name}-നെ ഹോസ്റ്റ് പുറത്താക്കി",
+  back:"{name} തിരിച്ചെത്തി 👋", lostConn:"{name}-ന്റെ കണക്ഷൻ പോയി — തിരിച്ചു വരാൻ കാത്തിരിക്കുന്നു…", raw:"{text}",
+  "wc.start":"കളി തുടങ്ങി! {name} ആദ്യം (നറുക്കെടുത്തത്).",
+  "wc.played":"{name} {card} ഇട്ടു", "wc.colour":" (നിറം: {color})", "wc.pending":" — +{n} വരുന്നു", "wc.finished":" — {place}-ാമതായി തീർത്തു! 🎉", "wc.unoq":" — UNO?",
+  "wc.drewN":"{name} {n} കാർഡ് എടുത്തു, ഊഴം പോയി", "wc.drew":"{name} ഒരു കാർഡ് എടുത്തു", "wc.drewPass":"{name} കാർഡ് എടുത്തു, പാസ് ചെയ്തു", "wc.pass":"{name} പാസ് ചെയ്തു",
+  "wc.caught":"{by} {name}-നെ പിടിച്ചു — UNO പറയാത്തതിന് +{n}!", "wc.uno":"{name}: UNO!",
+  "wc.won":"{winner} ജയിച്ചു! {loser} {n} കാർഡുമായി അവസാനം.", "wc.wonAll":"{winner} ജയിച്ചു!",
+  "ace.start":"ഏസ് കളി തുടങ്ങി! സ്‌പേഡ് ഏസ് {name}-ന്റെ കൈയിൽ — {name} തുടങ്ങുന്നു.", "ace.led":"{name} {card} ഇറക്കി", "ace.played":"{name} {card} ഇട്ടു",
+  "ace.cut":"{name} {card} കൊണ്ട് വെട്ടി! {picker} {n} കാർഡ് എടുക്കണം", "ace.cutHidden":"{name} മറച്ചു വെട്ടി! {picker} {n} കാർഡ് എടുക്കണം",
+  "ace.cleared":"എല്ലാവരും ഒരേ സൂട്ട് ഇട്ടു — കാർഡുകൾ ഒഴിവായി. അടുത്തത് {name} ഇറക്കും", "ace.escaped":"{name} രക്ഷപ്പെട്ടു — {place}-ാമത്! 🏃",
+  "ace.kazhutha":"{name} ആണ് കഴുത! 🐴", "ace.noKazhutha":"എല്ലാവരും ഒന്നിച്ചു രക്ഷപ്പെട്ടു — ഇത്തവണ കഴുത ഇല്ല!",
+  "ace.takeAsk":"{name} {target}-ന്റെ {n} കാർഡും ചോദിക്കുന്നു 🤫", "ace.takeCancel":"{name} അഭ്യർത്ഥന റദ്ദാക്കി",
+  "ace.takeTimeout":"{name} മറുപടി പറഞ്ഞില്ല — അഭ്യർത്ഥന പോയി", "ace.takeNo":"{name} കാർഡ് കൊടുത്തില്ല 🙅", "ace.takeYes":"{giver} {n} കാർഡും {taker}-ന് കൊടുത്തു 🤝",
+  "r.finish":"{place}-ാമതായി തീർത്തു! 🎉", "r.reverse":"ദിശ തിരിച്ചു 🔄",
+  "r.cut":"{card} കൊണ്ട് വെട്ടി ✂️", "r.cutHidden":"മറച്ചു വെട്ടി ✂️", "r.pickup":"{n} കാർഡ് എടുത്തു 😭", "r.escape":"രക്ഷപ്പെട്ടു — {place}-ാമത്! 🎉", "r.kazhutha":"കഴുത! 🐴",
+  "r.takeAsk":"{target}-ന്റെ {n} കാർഡും ചോദിക്കുന്നു 🤫", "r.takeCancel":"— അഭ്യർത്ഥന റദ്ദാക്കി", "r.takeTimeout":"സമയത്ത് മറുപടി ഇല്ല ⏳", "r.takeNo":"കാർഡ് കൊടുത്തില്ല 🙅", "r.takeYes":"{giver}-ന്റെ {n} കാർഡും എടുത്തു 🤝",
+  "mock.skip.0":"സ്കിപ്പ് ആയി 😢","mock.skip.1":"ഊഴം പോയി 😭","mock.skip.2":"സ്കിപ്പ് — കഷ്ടം 😿","mock.skip.3":"ഈ തവണ വെറുതെ ഇരിക്കണം 🥲",
+  "mock.draw.0":"+{n} കിട്ടി, ഊഴവും പോയി 😭","mock.draw.1":"+{n} കാർഡ് വിഴുങ്ങി 🥴","mock.draw.2":"+{n}… അയ്യോ 😵","mock.draw.3":"+{n} എടുത്തു, ഊഴം ഇല്ല 😢",
+  "mock.last.0":"{n} കാർഡുമായി അവസാനം 😭","mock.last.1":"അവസാനം ബാക്കി — {n} കാർഡ് 🥲",
+  "mock.caught.0":"UNO പറയാൻ മറന്നു — +{n} 🤦","mock.caught.1":"ഉറങ്ങിപ്പോയി — +{n} 😴",
+  you:"നിങ്ങൾ", yourTurn:"നിങ്ങളുടെ ഊഴം", yourTurnBang:"നിങ്ങളുടെ ഊഴം!", yourTurnPlus:"നിങ്ങളുടെ ഊഴം — +{n} വരുന്നു!",
+  playing:"{name} കളിക്കുന്നു", mustDrawOrStack:"{name} {n} എടുക്കണം, അല്ലെങ്കിൽ സ്റ്റാക്ക്", watching:" · നിങ്ങൾ തീർത്തു, കാണുന്നു 👀",
+  wonRound:"{name} ജയിച്ചു", playOrDraw:"നിങ്ങളുടെ ഊഴം — കാർഡ് ഇടുക, അല്ലെങ്കിൽ എടുക്കുക", playItOrPass:"ഇടുക, അല്ലെങ്കിൽ പാസ്",
+  stackOrDraw:"{k} സ്റ്റാക്ക് ചെയ്യുക, അല്ലെങ്കിൽ {n} എടുക്കുക", youMustDraw:"നിങ്ങൾ {n} കാർഡ് എടുക്കണം",
+  drawCard:"കാർഡ് എടുക്കുക", pass:"പാസ്", drawN:"{n} എടുക്കുക", drawingN:"{n} എടുക്കുന്നു…", autoIn:"{s}s കഴിഞ്ഞാൽ തനിയെ",
+  catchName:"{name}-നെ പിടിക്കൂ!", forgotUno:"UNO മറന്നു", catchIn:"{s}s-ൽ പിടിക്കാം", readyIn:"{s}s-ൽ", catchBang:"പിടിക്കൂ!",
+  tagPlaying:"കളിക്കുന്നു", tagNext:"അടുത്തത്", tagLast:"അവസാനം 😭", tagKazhutha:"കഴുത 🐴", tagEscaped:"രക്ഷപ്പെട്ടു {place}", tagUno:"UNO!", tag1:"1 കാർഡ്", tag2:"2 ബാക്കി", tagRecon:"തിരിച്ചു വരുന്നു…",
+  nCards:"{n} കാർഡ്", oneCard:"1 കാർഡ്", youEscaped:"രക്ഷപ്പെട്ടു 🏃", youFinished:"{place}-ാമതായി തീർത്തു 🎉",
+  low2:"<b>{name}</b>-ന്റെ കൈയിൽ 2 കാർഡ് മാത്രം. UNO പറയാൻ മറന്നാൽ <b>പിടിക്കൂ</b>.", calledUno:"<b>{name}</b> UNO പറഞ്ഞു — ഒരു കാർഡ് മാത്രം!",
+  one1:"<b>{name}</b>-ന്റെ കൈയിൽ 1 കാർഡ്, UNO പറഞ്ഞിട്ടില്ല. 2 സെക്കൻഡിൽ പിടിക്കാം.", youDrew:"നിങ്ങൾ {n} കാർഡ് എടുത്തു", drewPlayable:"ഒരു കാർഡ് എടുത്തു — ഇടുക, അല്ലെങ്കിൽ പാസ്",
+  colour:"നിറം: {c}", deckLeft:"{n} ബാക്കി", pickColour:"അടുത്ത നിറം തിരഞ്ഞെടുക്കൂ", youHold:"{n} ഉണ്ട്",
+  noMatch:"ആ കാർഡ് ചേരില്ല", only2:"+2-ന് മുകളിൽ +2 മാത്രം", only4:"+4-ന് മുകളിൽ +4 മാത്രം", mustFollow:"സൂട്ട് ഇടണം — {s} ഇടുക",
+  leadAny:"നിങ്ങളുടെ ഊഴം — ഏത് കാർഡും ഇറക്കാം", followIf:"നിങ്ങളുടെ ഊഴം — {s} ഉണ്ടെങ്കിൽ അത് ഇടണം", follow:"ഇടണം:", thrown:"{n} ഒഴിവായി", leadAnyChip:"ഏത് കാർഡും",
+  aceStart:"സ്‌പേഡ് ഏസ് ഉള്ളയാൾ തുടങ്ങും", newTrick:"പുതിയ കളി", picksUp:"എടുക്കണം", cutLine:"{name} വെട്ടി! {picker} {n} എടുക്കണം", clearedLine:"എല്ലാവരും ഇട്ടു — കാർഡുകൾ ഒഴിവായി",
+  isKazhutha:"{name} ആണ് കഴുത 🐴", youAreKazhutha:"നിങ്ങൾ ആണ് കഴുത 🐴", noKazhuthaLine:"ഇത്തവണ കഴുത ഇല്ല",
+  askAll:"{name}-ന്റെ എല്ലാ കാർഡും ചോദിക്കുക 🤫", faceDown:"{n} കാർഡ്, മറച്ച്", askTitle:"{name}-ന്റെ {n} കാർഡും ചോദിക്കണോ?",
+  askText:"{name} സമ്മതിക്കണം. സമ്മതിച്ചാൽ കാർഡുകൾ മറച്ച് നിങ്ങളുടെ കൈയിൽ വരും, {name} രക്ഷപ്പെടും. മറ്റുള്ളവർ എണ്ണം മാത്രം കാണും.", ask:"ചോദിക്കുക",
+  waiting:"{name}-ന്റെ മറുപടിക്ക് കാത്തിരിക്കുന്നു…", cancel:"റദ്ദാക്കുക", giveAll:"{n} കാർഡും {name}-ന് കൊടുക്കുക", youEscape:"നിങ്ങൾ രക്ഷപ്പെടും", keepCards:"കാർഡ് തരില്ല",
+  giveTitle:"{name} നിങ്ങളുടെ {n} കാർഡും ചോദിക്കുന്നു", giveText:"സമ്മതിച്ചാൽ കാർഡുകൾ മറച്ച് അവർക്ക് പോകും, നിങ്ങൾ രക്ഷപ്പെടും. ഏത് കാർഡാണെന്ന് മറ്റാരും കാണില്ല.", giveThem:"കൊടുക്കുക",
+  endWon:"നിങ്ങൾ ജയിച്ചു!", endLast:"ഇത്തവണ നിങ്ങൾ അവസാനം", endOther:"{name} ജയിച്ചു", finishOrder:"തീർത്ത ക്രമം", finished:"തീർത്തു", lastRow:"അവസാനം · {name}", cardsLeft:"{n} കാർഡ് ബാക്കി", roomSoFar:"ഈ റൂമിൽ ഇതുവരെ",
+  endKazhuthaYou:"നിങ്ങൾ ആണ് കഴുത!", endKazhutha:"{name} ആണ് കഴുത!", endNoKazhutha:"എല്ലാവരും രക്ഷപ്പെട്ടു — കഴുത ഇല്ല!", escapeOrder:"രക്ഷപ്പെട്ട ക്രമം", escaped:"രക്ഷപ്പെട്ടു", kazhuthaCount:"ഈ റൂമിലെ കഴുത കണക്ക്",
+  nextRound:"അടുത്ത റൗണ്ട്", playAgain:"വീണ്ടും കളിക്കാം", backLobby:"ലോബിയിലേക്ക്", tapAgain:"വീണ്ടും ടാപ്പ്", lostConnToast:"കണക്ഷൻ പോയി — വീണ്ടും കണക്ട് ചെയ്യുന്നു…",
+  noteSub:"{n} കാർഡ് കൈയിൽ. നോട്ടുകൾ സ്വകാര്യം — നിങ്ങൾക്ക് മാത്രം കാണാം.", noNotes:"ഇതുവരെ നോട്ട് ഇല്ല.", noteYou:"നിങ്ങൾ", notePh:"സ്വന്തം നോട്ട് എഴുതുക", add:"ചേർക്കുക",
+  removeFromRoom:"{name}-നെ റൂമിൽ നിന്ന് പുറത്താക്കുക", close:"അടയ്ക്കുക", playersTitle:"ഈ റൂമിലെ കളിക്കാർ", playersSub:"റൂം നിങ്ങളുടേതാണ്; ആരെയും പുറത്താക്കാം.",
+  youHost:"നിങ്ങൾ · ഹോസ്റ്റ്", replacedByCpu:"കമ്പ്യൂട്ടർ ഏറ്റെടുത്തു", cpuPlayer:"കമ്പ്യൂട്ടർ", waitingSeat:"കാത്തിരിക്കുന്നു", remove:"പുറത്താക്കുക", cpuBetween:"കമ്പ്യൂട്ടർ കളിക്കാരെ റൗണ്ടുകൾക്കിടയിൽ മാത്രം മാറ്റാം.",
+  removeTitle:"{name}-നെ പുറത്താക്കണോ?", removeInRound:"ഈ റൗണ്ടിൽ ബാക്കി കമ്പ്യൂട്ടർ കളിക്കും.", removeWait:"അവർ ലോബിയിലേക്ക് പോകും.",
+  leaveTitle:"റൂം വിടണോ?", leaveInRound:"നിങ്ങളുടെ കാർഡുകൾ കമ്പ്യൂട്ടർ കളിക്കും; മറ്റുള്ളവർക്ക് തുടരാം.", leaveWait:"റൂം കോഡ് ഉപയോഗിച്ച് വീണ്ടും ചേരാം.", leaveRoom:"റൂം വിടുക",
+  langBtn:"English", red:"ചുവപ്പ്", yellow:"മഞ്ഞ", green:"പച്ച", blue:"നീല", spades:"സ്‌പേഡ്", hearts:"ആത്ത്", clubs:"ക്ലാവർ", diamonds:"ഡയമൻ",
+  skipCard:"സ്കിപ്പ്", reverseCard:"റിവേഴ്സ്", draw2Card:"+2", wildCard:"വൈൽഡ്", wild4Card:"വൈൽഡ് +4",
+}};
+let LANG=(function(){ try{ return localStorage.getItem("wildcard_lang")||"ml"; }catch(e){ return "ml"; } })();
+function setLang(l){ LANG=l; try{ localStorage.setItem("wildcard_lang",l); }catch(e){} document.documentElement.lang=l; document.body.classList.toggle("ml",l==="ml");
+  $("#langBtn").textContent=t("langBtn");
+  document.querySelectorAll("#langPick button").forEach(x=>x.classList.toggle("on",x.dataset.l===l));
+  if(S) renderState(null); }
+function ordT(n){ n=+n||0; if(LANG==="ml") return n+"-ാമത്"; const s=["th","st","nd","rd"],v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); }
+function placeT(n){ n=+n||0; return LANG==="ml" ? n+"-ാമത്" : ordT(n); }
+function t(key,p){ let str=(T[LANG]&&T[LANG][key])||T.en[key]||key;
+  if(p) for(const k in p){ let v=p[k]; if(k==="place") v=ordT(v); str=str.split("{"+k+"}").join(v==null?"":String(v)); }
+  return str; }
+// the server sends commentary as {k, p}; cards inside it are objects for Wildcard, text for Ace
+function cardTxt(c){ if(!c) return ""; if(typeof c==="string") return c;
+  const col=c.color==="wild"?"":t(c.color)+" ";
+  if(c.kind==="num") return col+c.val;
+  return col+t({skip:"skipCard",reverse:"reverseCard",draw2:"draw2Card",wild:"wildCard",wild4:"wild4Card"}[c.kind]||c.kind); }
+function fmt(m){ if(!m) return ""; if(typeof m==="string") return m;
+  const p=Object.assign({},m.p||{}); if(p.card&&typeof p.card==="object") p.card=cardTxt(p.card); if(p.color) p.color=t(p.color);
+  if(m.k==="wc.played") return t("wc.played",p)+(p.color?t("wc.colour",p):"")+(p.pending?t("wc.pending",p):"")+(p.place?t("wc.finished",p):"")+(p.uno?t("wc.unoq"):"");
+  return t(m.k,p); }
+
 
 /* ---- SOUND ---- */
 const Sound=(()=>{
@@ -615,21 +802,18 @@ function connect(){
     if(sess.name && !myName) myName=sess.name;
     socket.emit("rejoin",sess,res=>{ if(!(res&&res.ok)){ clearSession(); if(S) backToLobby(); } });
   });
-  socket.on("disconnect",()=>{ if(S){ const t=$("#toast"); t.textContent="Connection lost — reconnecting…"; t.style.display="block"; clearTimeout(toast._t); } });
+  socket.on("disconnect",()=>{ if(S){ const tt=$("#toast"); tt.textContent=t("lostConnToast"); tt.style.display="block"; clearTimeout(toast._t); } });
   socket.on("lobby",rooms=>renderLobby(rooms));
   socket.on("state",st=>{ const prev=S; S=st; if(st.me>=0&&st.players[st.me]) myName=st.players[st.me].name; saveSession(); renderState(prev); });
   socket.on("err",m=>{ Sound.error(); toast(m); });
-  socket.on("drewPlayable",()=>toast("You drew a card — play it or pass"));
+  socket.on("drewPlayable",()=>toast(t("drewPlayable")));
   socket.on("chat",m=>addChat(m));
   socket.on("voiceRoster",r=>{ renderVoiceRoster(r); if(S&&S.started) renderSeats(); });
   socket.on("voice-peers",({peers})=>{ peers.forEach(id=>createPeer(id,true)); });
   socket.on("voice-peer-left",({id})=>closePeer(id));
   socket.on("voice-signal",onVoiceSignal);
   socket.on("react",onReact);
-  socket.on("noteAlert",n=>{ Sound.msg();
-    pushAlert("note"+Date.now(), n.mine
-      ? `<span class="ic">📝</span><span>You marked <b>${esc(n.target)}</b>: “${esc(n.text)}”</span>`
-      : `<span class="ic">📝</span><span><b>${esc(n.by)}</b> marked <b>${esc(n.target)}</b>: “${esc(n.text)}”</span>`,"info",6000); });
+  // notes are private, so there is nothing to announce
   socket.on("kicked",({by})=>{ backToLobby(true); toast(`${by} removed you from the room`,3500); });
 }
 
@@ -643,11 +827,12 @@ function nextPop(){ const it=popQueue.shift(); if(!it){ popBusy=false; return; }
 function seatEl(i){ return document.querySelector(`.seat[data-i="${i}"]`); }
 function onReact(ev){
   if(!S||!S.started) return;
-  const you=ev.index===S.me, who=you?"You":esc(ev.name);
-  if(you) ev.text=String(ev.text).replace(/^(is|wants|picks|takes|has) /,(m,v)=>({is:"are",wants:"want",picks:"pick",takes:"take",has:"have"})[v]+" ");
+  const you=ev.index===S.me, who=you?t("you"):esc(ev.name);
+  ev.text=fmt(ev.m)||ev.text||"";
+  if(you && LANG==="en") ev.text=String(ev.text).replace(/^(is|wants|picks|takes|has) /,(m,v)=>({is:"are",wants:"want",picks:"pick",takes:"take",has:"have"})[v]+" ");
   if(ev.kind==="reverse"){
     const da=$("#dirArrow"); da.classList.remove("flip"); void da.offsetWidth; da.classList.add("flip");
-    Sound.special(); bigPop("🔄",`${who} reversed the direction`); return;
+    Sound.special(); bigPop("🔄",`${who} ${esc(ev.text)}`); return;
   }
   if(ev.kind==="takeAsk"){ Sound.special(); bigPop("🤫",`${who} ${esc(ev.text)}`); return; }
   if(ev.kind==="takeYes"){ Sound.special(); bigPop("🤝",`${who} ${esc(ev.text)}`); return; }
@@ -657,6 +842,7 @@ function onReact(ev){
   if(ev.kind==="escape"){ Sound.win(); bigPop("🏃",`${who} ${esc(ev.text)}`,"happy"); if(you) Confetti.burst(); return; }
   Sound.sad();
   const emoji={skip:"😢",draw:"😭",caught:"🤦",pickup:"😭",kazhutha:"🐴",last:"😭"}[ev.kind]||"😢";
+  if(ev.kind==="kazhutha"){ const dk=document.createElement("div"); dk.className="donkey"; dk.textContent="🐴"; document.body.appendChild(dk); setTimeout(()=>dk.remove(),5200); }
   bigPop(emoji,`${who} ${esc(ev.text)}`,"sad");
   const host=you?$("#meBar"):seatEl(ev.index);
   if(host){ if(!you){ host.classList.remove("sad"); void host.offsetWidth; host.classList.add("sad"); }
@@ -680,6 +866,14 @@ function flyFrom(fromEl,toEl,makeCard,delay=0){
   },delay);
 }
 
+// New round: cards spin out of the centre to every seat
+function dealAnim(makeCard){
+  const seats=[...document.querySelectorAll(".seat .ring")]; const me=$("#handwrap"); const from=$("#center");
+  if(!from) return; let d=0;
+  for(let k=0;k<4;k++){ [...seats,me].forEach(el=>{ flyFrom(from,el,makeCard,d); d+=55; }); }
+  Sound.whoosh();
+}
+function isNewRound(prev){ return !!(prev && S.game && !S.game.over && (!prev.started || (prev.game && prev.game.over))); }
 function renderLobby(rooms){
   const list=$("#roomList"); list.innerHTML="";
   if(!rooms.length){ list.innerHTML='<div class="empty">No open rooms right now. Create one below and share the code.</div>'; return; }
@@ -714,6 +908,7 @@ function clearAlerts(){ $("#alerts").innerHTML=""; shownAlerts.clear(); }
 let pendingFx=[];
 function runFx(prev){
   const fx=pendingFx; pendingFx=[];
+  if(isNewRound(prev)){ dealAnim(backEl); return; }
   const g=S.game; if(!g||!prev||!prev.game||prev.roomId!==S.roomId||!prev.started) return;
   // a card was played: fly it from that player to the pile
   if(JSON.stringify(prev.game.top)!==JSON.stringify(g.top)){
@@ -732,18 +927,18 @@ function watchChanges(prev){
     const old=prev.players.find(x=>x.index===p.index); if(!old) return;
     const gained=p.count-old.count;
     if(gained>0){ floatNum(p.index,"+"+gained); pendingFx.push({type:"draw",index:p.index,n:gained});
-      if(p.index===S.me && gained>=2) toast(`You drew ${gained} cards`); }
+      if(p.index===S.me && gained>=2) toast(t("youDrew",{n:gained})); }
     if(p.index===S.me || g.type==="ace") return;
     if(p.count===2 && old.count!==2){
       Sound.special();
       pushAlert("low"+p.index+":"+S.game.deckCount,
-        `<span class="ic">⚠️</span><span><b>${esc(p.name)}</b> has 2 cards left. If they forget to call UNO, tap <b>Catch</b>.</span>`,"low",6000);
+        `<span class="ic">⚠️</span><span>${t("low2",{name:esc(p.name)})}</span>`,"low",6000);
     }
     if(p.count===1 && old.count!==1){
       Sound.uno();
       pushAlert("one"+p.index+":"+S.game.deckCount, p.saidUno
-        ? `<span class="ic">📣</span><span><b>${esc(p.name)}</b> called UNO — one card left!</span>`
-        : `<span class="ic">🚨</span><span><b>${esc(p.name)}</b> is on 1 card and hasn’t called UNO. The Catch button opens in 2 seconds.</span>`,"uno",6000);
+        ? `<span class="ic">📣</span><span>${t("calledUno",{name:esc(p.name)})}</span>`
+        : `<span class="ic">🚨</span><span>${t("one1",{name:esc(p.name)})}</span>`,"uno",6000);
     }
   });
 }
@@ -755,6 +950,18 @@ function floatNum(index,text){
     setTimeout(()=>f.remove(),1700); },30);
 }
 
+/* a little person holding their cards (torso in the player's colour) */
+function personHtml(p,inVoice,tag){
+  const n=Math.min(p.count,7), cards=[];
+  for(let k=0;k<n;k++){ const a=n===1?0:-30+60*k/(n-1); cards.push(`<i style="transform:rotate(${a.toFixed(1)}deg)"></i>`); }
+  const badge=p.isAI&&p.connected!==false&&!/\((left|removed)\)/.test(p.name)?"🤖":esc((p.name||"?").trim().charAt(0).toUpperCase());
+  return `<div class="ring person" style="--c:${avaColor(p.name)}">
+    <div class="head"><i class="eye l"></i><i class="eye r"></i><i class="mouth"></i></div>
+    <div class="torso">${badge}</div>
+    <div class="fan2">${cards.join("")}</div><span class="hand l"></span><span class="hand r"></span>
+    <span class="cnt" title="${p.count}">${p.count}</span>${inVoice?'<span class="vmic">🎙</span>':''}${tag}</div>`;
+}
+
 /* ---- table layout: opponents sit around the table in turn order ---- */
 function renderSeats(){
   if(!S||!S.game) return;
@@ -764,7 +971,7 @@ function renderSeats(){
   const T=$("#table").getBoundingClientRect();
   const spread = m<=2?Math.PI*0.62 : m<=4?Math.PI*0.9 : m<=7?Math.PI*1.08 : Math.PI*1.22;
   const size = m>10?"tiny":(m>6||T.width<420&&m>4)?"compact":"";
-  const cx=50, cy=58, rx=43, ry=46;
+  const cx=50, cy=58, rx=43, ry=42;
   const isAce=g.type==="ace";
   const fin=g.finished||[];
   let nextIdx=-1;
@@ -781,23 +988,22 @@ function renderSeats(){
       +(!isAce&&escIdx<0&&p.count===2?" low":"")+(!isAce&&escIdx<0&&p.count===1?" one":"")+(gone?" gone":"")+(escIdx>=0?" escaped":"")+(donkey?" donkey":"");
     d.dataset.i=pi; d.style.left=x+"%"; d.style.top=y+"%";
     const place=escIdx>=0?`${escIdx+1}${["st","nd","rd"][escIdx]||"th"}`:"";
-    const tag = (!p.isAI && p.connected===false) ? `<span class="tag" style="background:var(--amber);color:var(--ink)">reconnecting…</span>`
-              : donkey ? `<span class="tag" style="background:var(--alert)">${isAce?"Kazhutha 🐴":"Last 😭"}</span>`
-              : escIdx>=0 ? `<span class="tag" style="background:var(--green)">${isAce?"Escaped "+place:(escIdx===0?"🏆 ":"")+place}</span>`
-              : g.cur===pi&&!g.over ? `<span class="tag t">Playing</span>`
-              : nextIdx===pi&&!g.over ? `<span class="tag t">Next</span>`
+    const tag = (!p.isAI && p.connected===false) ? `<span class="tag" style="background:var(--amber);color:var(--ink)">${t("tagRecon")}</span>`
+              : donkey ? `<span class="tag" style="background:var(--alert);color:#fff">${isAce?t("tagKazhutha"):t("tagLast")}</span>`
+              : escIdx>=0 ? `<span class="tag" style="background:var(--green);color:#fff">${isAce?t("tagEscaped",{place:escIdx+1}):(escIdx===0?"🏆 ":"")+placeT(escIdx+1)}</span>`
+              : g.cur===pi&&!g.over ? `<span class="tag t">${t("tagPlaying")}</span>`
+              : nextIdx===pi&&!g.over ? `<span class="tag t">${t("tagNext")}</span>`
               : isAce ? ""
-              : p.count===1 ? `<span class="tag" style="background:var(--alert)">${p.saidUno?"UNO!":"1 card"}</span>`
-              : p.count===2 ? `<span class="tag" style="background:var(--amber);color:var(--ink)">2 left</span>` : "";
+              : p.count===1 ? `<span class="tag" style="background:var(--alert);color:#fff">${p.saidUno?t("tagUno"):t("tag1")}</span>`
+              : p.count===2 ? `<span class="tag" style="background:var(--amber);color:var(--ink)">${t("tag2")}</span>` : "";
     const fanN=Math.min(p.count,6);
     const inVoice=voiceNames.has(p.name);
     const notes=p.notes||[];
     const noteHtml=notes.length?`<div class="notes">${notes.slice(-2).map(n=>`<span title="${esc(n.by)}: ${esc(n.text)}">📝 ${esc(n.text)}</span>`).join("")}${notes.length>2?`<span>+${notes.length-2}</span>`:""}</div>`:"";
-    d.innerHTML=`<div class="ring">${avatar(p)}<span class="cnt" title="${p.count} cards">${p.count}</span>${inVoice?'<span class="vmic">🎙</span>':''}${tag}</div>
-      <div class="nm">${esc(p.name)}</div>${size?"":`<div class="fan">${"<i></i>".repeat(fanN)}</div>`}${noteHtml}`;
+    d.innerHTML=`${personHtml(p,inVoice,tag)}<div class="nm">${esc(p.name)}</div>${noteHtml}`;
     d.title=`${p.name}: ${p.count} card${p.count===1?"":"s"} — tap to add a note`;
     d.onclick=()=>{ Sound.click(); openPlayer(pi); };
-    if(p.vulnerable && !g.over){ const cb=catchButton(p,"catch","Catch!"); d.appendChild(cb); }
+    if(p.vulnerable && !g.over){ const cb=catchButton(p,"catch",t("catchBang")); d.appendChild(cb); }
     box.appendChild(d);
   });
   // centre piles sit in the middle of the felt
@@ -818,8 +1024,8 @@ function catchButton(p,cls,label,sub){
 function paintCatch(b){
   const left=Math.ceil(((catchReady[b.dataset.catch]||0)-Date.now())/1000);
   b.disabled=left>0;
-  const sub=b.dataset.sub?`<small>${left>0?"ready in "+left+"s":b.dataset.sub}</small>`:"";
-  b.innerHTML=(left>0&&!b.dataset.sub?`Catch in ${left}s`:b.dataset.label)+sub;
+  const sub=b.dataset.sub?`<small>${left>0?t("readyIn",{s:left}):b.dataset.sub}</small>`:"";
+  b.innerHTML=(left>0&&!b.dataset.sub?t("catchIn",{s:left}):b.dataset.label)+sub;
 }
 setInterval(()=>document.querySelectorAll("[data-catch]").forEach(paintCatch),200);
 
@@ -852,7 +1058,7 @@ function renderState(prev){
   for(let i=0;i<stk;i++){const b=backEl(); if(i===stk-1)b.classList.add("top"); b.style.top=(-i*2)+"px";b.style.left=(i*2)+"px";deck.appendChild(b);}
   const canDrawNow=myTurn&&!g.drew;
   deck.classList.toggle("tappable",canDrawNow);
-  $("#deckLbl").textContent=g.deckCount+" left";
+  $("#deckLbl").textContent=t("deckLeft",{n:g.deckCount});
   deck.onclick=()=>{ if(canDrawNow){ Sound.draw(); socket.emit("draw"); } };
 
   // discard + active colour
@@ -863,7 +1069,7 @@ function renderState(prev){
   discardKey=key;
   $("#colorRing").style.borderColor=COLOR_HEX[g.activeColor]||"transparent";
   const cn=$("#colorName");
-  if(g.top.color==="wild"||g.activeColor!==g.top.color){ cn.style.display="block"; cn.textContent="Colour: "+g.activeColor;
+  if(g.top.color==="wild"||g.activeColor!==g.top.color){ cn.style.display="block"; cn.textContent=t("colour",{c:t(g.activeColor)});
     cn.style.background=COLOR_HEX[g.activeColor]; cn.style.color=g.activeColor==="yellow"?"var(--ink)":"#fff"; } else cn.style.display="none";
 
   // pending stack
@@ -874,22 +1080,22 @@ function renderState(prev){
 
   // status line
   const who=$("#who");
-  if(g.over){ who.textContent=g.winner+" won the round"; who.className="who"; }
+  if(g.over){ who.textContent=t("wonRound",{name:g.winner}); who.className="who"; }
   else if(myTurn){ who.className="who me";
-    who.textContent = chain ? (stackable?`Stack a ${g.top.kind==="wild4"?"+4":"+2"}, or draw ${g.pendingDraw}`:`You must draw ${g.pendingDraw} cards`)
-                   : g.drew ? "Play it, or pass" : "Your turn — play a card or draw";
-  } else { who.className="who"; who.textContent=(victim?victim.name:"…")+(chain?` must draw ${g.pendingDraw} or stack`:" is playing");
-    if((g.finished||[]).includes(S.me)) who.textContent+=" · you’re done, watching 👀"; }
-  const log=(g.log||[]).filter(Boolean); $("#log").textContent=log.length?log[log.length-1]:"";
+    who.textContent = chain ? (stackable?t("stackOrDraw",{k:g.top.kind==="wild4"?"+4":"+2",n:g.pendingDraw}):t("youMustDraw",{n:g.pendingDraw}))
+                   : g.drew ? t("playItOrPass") : t("playOrDraw");
+  } else { who.className="who"; const vn=victim?victim.name:"…"; who.textContent=chain?t("mustDrawOrStack",{name:vn,n:g.pendingDraw}):t("playing",{name:vn});
+    if((g.finished||[]).includes(S.me)) who.textContent+=t("watching"); }
+  const log=(g.log||[]).filter(Boolean); $("#log").textContent=log.length?fmt(log[log.length-1]):"";
 
   if(myTurn && prev && (!prev.game || prev.game.cur!==g.cur || prev.game.over)){
-    Sound.yourTurn(); bigPop("👉", chain?`Your turn — +${g.pendingDraw} is coming at you!`:"Your turn!","turn");
+    Sound.yourTurn(); bigPop("👉", chain?t("yourTurnPlus",{n:g.pendingDraw}):t("yourTurnBang"),"turn");
     if(navigator.vibrate) navigator.vibrate(80);
   }
   $("#gameScreen").classList.toggle("myturn",myTurn);
   const meP0=S.players[S.me];
   const myPlace=(g.finished||[]).indexOf(S.me);
-  if(meP0) $("#meBar").innerHTML=`${avatar(meP0)}<span>${myPlace>=0?`You finished ${myPlace+1}${["st","nd","rd"][myPlace]||"th"} 🎉`:myTurn?"Your turn":"You"}</span><span class="pill2">${meP0.count} card${meP0.count===1?"":"s"}</span>`;
+  if(meP0) $("#meBar").innerHTML=`${avatar(meP0)}<span>${myPlace>=0?t("youFinished",{place:myPlace+1}):myTurn?t("yourTurn"):t("you")}</span><span class="pill2">${meP0.count===1?t("oneCard"):t("nCards",{n:meP0.count})}</span>`;
 
   // hand (sorted by colour, then value) — server indexes are kept for play
   const H=$("#hand"); H.innerHTML=""; H.classList.toggle("mine",myTurn);
@@ -899,7 +1105,7 @@ function renderState(prev){
     markSelected(el,c,i,myTurn);
     el.onclick=()=>{ if(!myTurn) return;
       cardTap(el,c,i,()=>{
-        if(!ok){ Sound.error(); toast(chain?(g.top.kind==="wild4"?"Only a +4 can go on a +4":"Only a +2 can go on a +2"):"That card doesn’t match"); return; }
+        if(!ok){ Sound.error(); toast(chain?(g.top.kind==="wild4"?t("only4"):t("only2")):t("noMatch")); return; }
         if(c.color==="wild"){ pendingPlay=i; openColorPicker(i); }
         else { playSound(c); socket.emit("play",{handIndex:i}); } }); };
     H.appendChild(el); });
@@ -913,12 +1119,12 @@ function renderState(prev){
     if(myTurn){
       if(chain){
         forceDeadline=Date.now()+(g.forceIn||0);
-        const b=add(`Draw ${g.pendingDraw}<small id="forceTimer"></small>`,"danger",()=>{Sound.draw();socket.emit("draw");});
-        if(!stackable){ b.disabled=true; b.innerHTML=`Drawing ${g.pendingDraw}…`; }
+        const b=add(`${t("drawN",{n:g.pendingDraw})}<small id="forceTimer"></small>`,"danger",()=>{Sound.draw();socket.emit("draw");});
+        if(!stackable){ b.disabled=true; b.innerHTML=t("drawingN",{n:g.pendingDraw}); }
       } else if(g.drew){
-        add("Pass","",()=>{Sound.click();socket.emit("pass");});
+        add(t("pass"),"",()=>{Sound.click();socket.emit("pass");});
       } else {
-        add("Draw a card","",()=>{Sound.draw();socket.emit("draw");});
+        add(t("drawCard"),"",()=>{Sound.draw();socket.emit("draw");});
       }
     }
     // Show UNO only when one of my 2 cards can actually be played now (or I'm already on 1 card and haven't called it)
@@ -926,7 +1132,7 @@ function renderState(prev){
     const canPreCall = meP && !meP.saidUno && (canGoToOne || meP.vulnerable);
     if(canPreCall){ const u=document.createElement("button"); u.className="unobtn"; u.textContent="UNO!"; u.title="Call UNO";
       u.onclick=()=>{ Sound.uno(); socket.emit("callUno"); u.remove(); }; A.appendChild(u); }
-    S.players.forEach(p=>{ if(p.index!==S.me && p.vulnerable) A.appendChild(catchButton(p,"btn warn",`Catch ${esc(p.name)}!`,"forgot UNO")); });
+    S.players.forEach(p=>{ if(p.index!==S.me && p.vulnerable) A.appendChild(catchButton(p,"btn warn",t("catchName",{name:esc(p.name)}),t("forgotUno"))); });
   }
   runFx(prev);
   if(playerOpen!==null && playerOpen!=="manage") renderPlayer();
@@ -940,43 +1146,43 @@ function renderAce(prev){
   const g=S.game, pg=prev&&prev.game&&prev.game.type==="ace"?prev.game:null;
   const myTurn=g.cur===S.me&&!g.over&&!g.result;
   const hand=S.hand||[];
-  const nm=i=>i===S.me?"You":(S.players[i]?S.players[i].name:"");
+  const nm=i=>i===S.me?t("you"):(S.players[i]?S.players[i].name:"");
 
   // trick in the middle of the table
-  const T=$("#trick"); T.innerHTML=""; T.classList.toggle("cleared",!!(g.result&&g.result.kind==="clear"));
-  if(!g.trick.length){ T.innerHTML=`<div class="empty2">${g.over?"":g.firstTrick?"A♠ starts the game":"New trick"}</div>`; }
-  g.trick.forEach((t,k)=>{
+  const TR=$("#trick"); TR.innerHTML=""; TR.classList.toggle("cleared",!!(g.result&&g.result.kind==="clear"));
+  if(!g.trick.length){ TR.innerHTML=`<div class="empty2">${g.over?"":g.firstTrick?t("aceStart"):t("newTrick")}</div>`; }
+  g.trick.forEach((tr,k)=>{
     const slot=document.createElement("div"); slot.className="slot";
-    if(g.result&&g.result.kind==="cut"){ if(k===g.trick.length-1) slot.classList.add("cut"); if(t.p===g.result.picker && t.card && t.card.s===g.ledSuit) slot.classList.add("high"); }
-    const el=t.hidden?aceBackEl():aceCardEl(t.card); slot.appendChild(el);
+    if(g.result&&g.result.kind==="cut"){ if(k===g.trick.length-1) slot.classList.add("cut"); if(tr.p===g.result.picker && tr.card && tr.card.s===g.ledSuit) slot.classList.add("high"); }
+    const el=tr.hidden?aceBackEl():aceCardEl(tr.card); slot.appendChild(el);
     const lb=document.createElement("div"); lb.className="who2";
-    lb.textContent=g.result&&g.result.kind==="cut"&&k===g.trick.length-1?"✂️ "+nm(t.p):(slot.classList.contains("high")?"picks up":nm(t.p));
-    slot.appendChild(lb); T.appendChild(slot);
+    lb.textContent=g.result&&g.result.kind==="cut"&&k===g.trick.length-1?"✂️ "+nm(tr.p):(slot.classList.contains("high")?t("picksUp"):nm(tr.p));
+    slot.appendChild(lb); TR.appendChild(slot);
   });
   const lc=$("#ledChip");
   if(g.over){ lc.classList.add("hide"); }
   else { lc.classList.remove("hide");
     const red=g.ledSuit==="H"||g.ledSuit==="D";
-    lc.innerHTML = g.ledSuit ? `Follow <span class="${red?"sr":""}">${SUIT_SYM[g.ledSuit]} ${SUIT_NAME[g.ledSuit]}</span>` : (g.firstTrick?"Lead the A♠":"Lead any card");
-    if(g.thrown) lc.innerHTML+=` <span style="color:var(--muted);font-weight:600">· ${g.thrown} thrown away</span>`; }
+    lc.innerHTML = g.ledSuit ? `${t("follow")} <span class="${red?"sr":""}">${SUIT_SYM[g.ledSuit]} ${t(SUIT_NAME[g.ledSuit])}</span>` : t("leadAnyChip");
+    if(g.thrown) lc.innerHTML+=` <span style="color:var(--muted);font-weight:600">· ${t("thrown",{n:g.thrown})}</span>`; }
 
   // status
   const who=$("#who"), cur=S.players[g.cur];
-  if(g.over){ who.className="who"; who.textContent=g.loser>=0?`${nm(g.loser)} ${g.loser===S.me?"are":"is"} the Kazhutha 🐴`:"No Kazhutha this time"; }
+  if(g.over){ who.className="who"; who.textContent=g.loser>=0?(g.loser===S.me?t("youAreKazhutha"):t("isKazhutha",{name:nm(g.loser)})):t("noKazhuthaLine"); }
   else if(g.result){ who.className="who";
-    who.textContent=g.result.kind==="cut"?`${nm(g.result.by)} cut! ${nm(g.result.picker)} ${g.result.picker===S.me?"pick":"picks"} up ${g.result.count}`:"Everyone followed — trick thrown away"; }
+    who.textContent=g.result.kind==="cut"?t("cutLine",{name:nm(g.result.by),picker:nm(g.result.picker),n:g.result.count}):t("clearedLine"); }
   else if(myTurn){ who.className="who me";
-    who.textContent=!g.trick.length?(g.firstTrick?"Your turn — lead the A♠":"Your turn — lead any card"):`Your turn — follow ${SUIT_SYM[g.ledSuit]} if you can`; }
-  else { who.className="who"; who.textContent=(cur?cur.name:"…")+" is playing"; }
-  const log=(g.log||[]).filter(Boolean); $("#log").textContent=log.length?log[log.length-1]:"";
+    who.textContent=!g.trick.length?t("leadAny"):t("followIf",{s:SUIT_SYM[g.ledSuit]}); }
+  else { who.className="who"; who.textContent=t("playing",{name:cur?cur.name:"…"}); }
+  const log=(g.log||[]).filter(Boolean); $("#log").textContent=log.length?fmt(log[log.length-1]):"";
 
   // your-turn pop + glow
   if(myTurn && prev && (!pg || pg.cur!==g.cur || pg.result)){
-    Sound.yourTurn(); bigPop("👉","Your turn!","turn"); if(navigator.vibrate) navigator.vibrate(80); }
+    Sound.yourTurn(); bigPop("👉",t("yourTurnBang"),"turn"); if(navigator.vibrate) navigator.vibrate(80); }
   $("#gameScreen").classList.toggle("myturn",myTurn);
   const meP0=S.players[S.me];
   if(meP0){ const out=(g.escaped||[]).includes(S.me);
-    $("#meBar").innerHTML=`${avatar(meP0)}<span>${out?"You escaped 🏃":myTurn?"Your turn":"You"}</span><span class="pill2">${meP0.count} card${meP0.count===1?"":"s"}</span>`; }
+    $("#meBar").innerHTML=`${avatar(meP0)}<span>${out?t("youEscaped"):myTurn?t("yourTurn"):t("you")}</span><span class="pill2">${meP0.count===1?t("oneCard"):t("nCards",{n:meP0.count})}</span>`; }
 
   // hand: sorted by suit, then rank
   const H=$("#hand"); H.innerHTML=""; H.classList.toggle("mine",myTurn);
@@ -985,8 +1191,7 @@ function renderAce(prev){
     markSelected(el,c,i,myTurn);
     el.onclick=()=>{ if(!myTurn) return;
       cardTap(el,c,i,()=>{
-        if(g.trick.length && c.s!==g.ledSuit && hand.some(x=>x.s===g.ledSuit)){ Sound.error(); toast(`You must follow suit — play a ${SUIT_SYM[g.ledSuit]}`); return; }
-        if(!g.trick.length && g.firstTrick && !(c.s==="S"&&c.r===14)){ Sound.error(); toast("The first card must be the A♠"); return; }
+        if(g.trick.length && c.s!==g.ledSuit && hand.some(x=>x.s===g.ledSuit)){ Sound.error(); toast(t("mustFollow",{s:SUIT_SYM[g.ledSuit]})); return; }
         Sound.play(); socket.emit("play",{handIndex:i}); }); };
     H.appendChild(el); });
   fitHand();
@@ -994,33 +1199,35 @@ function renderAce(prev){
   if(g.canTake && S.players[g.takeFrom]){
     const tgt=S.players[g.takeFrom];
     const b=document.createElement("button"); b.className="btn warn";
-    b.innerHTML=`Ask for all of ${esc(tgt.name)}’s cards 🤫<small>${tgt.count} card${tgt.count===1?"":"s"}, face down</small>`;
+    b.innerHTML=`${t("askAll",{name:esc(tgt.name)})}<small>${t("faceDown",{n:tgt.count})}</small>`;
     b.onclick=()=>{ Sound.click();
-      confirmBox(`Ask ${tgt.name} for all ${tgt.count} cards?`,tgt.name+" has to agree. If they do, the cards come to you face down and "+tgt.name+" escapes. Everyone will see the number of cards only.","Ask",()=>{ Sound.draw(); socket.emit("take"); }); };
+      confirmBox(t("askTitle",{name:tgt.name,n:tgt.count}),t("askText",{name:tgt.name}),t("ask"),()=>{ Sound.draw(); socket.emit("take"); }); };
     A.appendChild(b);
   }
   const rq=g.takeReq;
   if(rq && rq.from===S.me){
     const w=document.createElement("div"); w.className="btn ghost"; w.style.cursor="default";
-    w.innerHTML=`Waiting for ${esc(nm(rq.to))} to answer…<small>${rq.n} cards</small>`;
-    const c=document.createElement("button"); c.className="btn"; c.textContent="Cancel"; c.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:false}); };
+    w.innerHTML=`${t("waiting",{name:esc(nm(rq.to))})}<small>${t("nCards",{n:rq.n})}</small>`;
+    const c=document.createElement("button"); c.className="btn"; c.textContent=t("cancel"); c.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:false}); };
     A.append(w,c);
   }
   if(rq && rq.to===S.me){
-    const y=document.createElement("button"); y.className="btn go"; y.innerHTML=`Give all ${rq.n} cards to ${esc(nm(rq.from))}<small>you escape</small>`;
+    const y=document.createElement("button"); y.className="btn go"; y.innerHTML=`${t("giveAll",{n:rq.n,name:esc(nm(rq.from))})}<small>${t("youEscape")}</small>`;
     y.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:true}); };
-    const n2=document.createElement("button"); n2.className="btn danger"; n2.textContent="Keep my cards";
+    const n2=document.createElement("button"); n2.className="btn danger"; n2.textContent=t("keepCards");
     n2.onclick=()=>{ Sound.click(); socket.emit("takeAnswer",{accept:false}); };
     A.append(y,n2);
   }
   // the giver gets asked once per request
   const rqKey=rq?`${rq.from}-${rq.to}-${rq.n}`:"";
   if(rq && rq.to===S.me && askedKey!==rqKey){ askedKey=rqKey; Sound.msg();
-    confirmBox(`${nm(rq.from)} wants to take all ${rq.n} of your cards`,"If you agree, your cards go to them face down and you escape the game. Nobody else sees which cards they are.","Give them",()=>{ socket.emit("takeAnswer",{accept:true}); });
-    $("#confirmNo").textContent="Keep my cards"; $("#confirmNo").onclick=()=>{ $("#confirmOverlay").classList.add("hidden"); socket.emit("takeAnswer",{accept:false}); }; }
-  if(!rq && askedKey){ askedKey=""; if($("#confirmYes").textContent==="Give them") $("#confirmOverlay").classList.add("hidden"); }
+    confirmBox(t("giveTitle",{name:nm(rq.from),n:rq.n}),t("giveText"),t("giveThem"),()=>{ socket.emit("takeAnswer",{accept:true}); });
+    $("#confirmNo").textContent=t("keepCards"); $("#confirmNo").onclick=()=>{ $("#confirmOverlay").classList.add("hidden"); socket.emit("takeAnswer",{accept:false}); }; }
+  if(!rq && askedKey){ askedKey=""; if($("#confirmYes").textContent===t("giveThem")) $("#confirmOverlay").classList.add("hidden"); }
 
-  // animations: card flies to the table; a picked-up trick flies to the picker
+  // animations: dealing, card flies to the table, a cut thumps the table, a picked-up trick flies to the picker
+  if(isNewRound(prev)) dealAnim(aceBackEl);
+  if(pg && g.result && g.result.kind==="cut" && !pg.result){ const tb=$("#table"); tb.classList.remove("thump"); void tb.offsetWidth; tb.classList.add("thump"); }
   if(pg){
     if(g.trick.length>pg.trick.length){ const t=g.trick[g.trick.length-1];
       Sound.whoosh(); flyFrom(t.p===S.me?$("#handwrap"):seatEl(t.p),$("#trick"),()=>t.hidden?aceBackEl():aceCardEl(t.card)); }
@@ -1046,12 +1253,12 @@ function renderPlayer(){
   const P=$("#playerPanel");
   P.innerHTML=`<div style="display:flex;justify-content:center;margin-bottom:6px;">${avatar(p)}</div>
     <h2 style="margin-bottom:8px;">${esc(p.name)}</h2>
-    <p class="psub">${p.count} card${p.count===1?"":"s"} in hand. Notes are shared with everyone except ${esc(p.name)}.</p>
-    <div class="notelist">${notes.length?notes.map(n=>`<div class="noteitem">📝 ${esc(n.text)}<small>${n.mine?"you":esc(n.by)}</small>${n.mine||amHost?`<button data-rm="${esc(n.id)}" aria-label="Remove note">✕</button>`:""}</div>`).join(""):`<div class="psub" style="text-align:center;margin:6px 0;">No notes yet.</div>`}</div>
+    <p class="psub">${t("noteSub",{n:p.count})}</p>
+    <div class="notelist">${notes.length?notes.map(n=>`<div class="noteitem">📝 ${esc(n.text)}<small>${t("noteYou")}</small><button data-rm="${esc(n.id)}" aria-label="Remove note">✕</button></div>`).join(""):`<div class="psub" style="text-align:center;margin:6px 0;">${t("noNotes")}</div>`}</div>
     <div class="tagrow">${(S.gameType==="ace"?ACE_TAGS:QUICK_TAGS).map(([t,c])=>`<button class="tagbtn ${c}" data-tag="${esc(t)}">${esc(t)}</button>`).join("")}</div>
-    <div class="row" style="margin-bottom:12px;"><input id="noteText" maxlength="40" placeholder="Write your own note"><button class="btn go" id="noteAdd">Add</button></div>
-    ${amHost&&p.index!==S.me&&!(p.isAI&&inRound)&&!/\((left|removed)\)$/.test(p.name)?`<button class="btn danger" id="kickBtn" style="width:100%;margin-bottom:10px;">Remove ${esc(p.name)} from the room</button>`:""}
-    <button class="btn" id="playerClose" style="width:100%;">Close</button>`;
+    <div class="row" style="margin-bottom:12px;"><input id="noteText" maxlength="40" placeholder="${t("notePh")}"><button class="btn go" id="noteAdd">${t("add")}</button></div>
+    ${amHost&&p.index!==S.me&&!(p.isAI&&inRound)&&!/\((left|removed)\)$/.test(p.name)?`<button class="btn danger" id="kickBtn" style="width:100%;margin-bottom:10px;">${t("removeFromRoom",{name:esc(p.name)})}</button>`:""}
+    <button class="btn" id="playerClose" style="width:100%;">${t("close")}</button>`;
   const send=t=>{ t=(t||"").trim(); if(!t) return; Sound.click(); socket.emit("note",{target:p.index,text:t}); closePlayer(); };
   P.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>send(b.dataset.tag));
   P.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{ socket.emit("noteRemove",{target:p.index,id:b.dataset.rm}); });
@@ -1066,32 +1273,32 @@ function renderManage(){
   if(!S||S.hostId!==socket.id){ closePlayer(); return; }
   const inRound=S.started&&S.game&&!S.game.over;
   const P=$("#playerPanel");
-  P.innerHTML=`<h2>Players in this room</h2><p class="psub">You created this room, so you can remove anyone.</p>`+
+  P.innerHTML=`<h2>${t("playersTitle")}</h2><p class="psub">${t("playersSub")}</p>`+
     S.players.map(p=>{
       const gone=/\((left|removed)\)$/.test(p.name);
-      const sub=p.index===S.me?"you · host":gone?"replaced by computer":p.isAI?"computer player":(S.started?p.count+" cards":"waiting");
+      const sub=p.index===S.me?t("youHost"):gone?t("replacedByCpu"):p.isAI?t("cpuPlayer"):(S.started?t("nCards",{n:p.count}):t("waitingSeat"));
       const can=p.index!==S.me && !gone && !(p.isAI&&inRound);
-      return `<div class="mrow">${avatar(p)}<div style="min-width:0"><div class="mn">${esc(p.name)}</div><div class="ms">${sub}</div></div>${can?`<button class="btn danger" data-kick="${p.index}">Remove</button>`:""}</div>`;
+      return `<div class="mrow">${avatar(p)}<div style="min-width:0"><div class="mn">${esc(p.name)}</div><div class="ms">${sub}</div></div>${can?`<button class="btn danger" data-kick="${p.index}">${t("remove")}</button>`:""}</div>`;
     }).join("")+
-    (inRound?`<p class="psub" style="margin-top:8px;">Computer players can be removed between rounds.</p>`:"")+
-    `<button class="btn" id="manageClose" style="width:100%;margin-top:8px;">Close</button>`;
+    (inRound?`<p class="psub" style="margin-top:8px;">${t("cpuBetween")}</p>`:"")+
+    `<button class="btn" id="manageClose" style="width:100%;margin-top:8px;">${t("close")}</button>`;
   P.querySelectorAll("[data-kick]").forEach(b=>b.onclick=()=>askRemove(S.players[+b.dataset.kick]));
   $("#manageClose").onclick=closePlayer;
 }
 function askRemove(p){
   const inRound=S.started&&S.game&&!S.game.over;
-  confirmBox(`Remove ${p.name}?`, inRound&&!p.isAI?"A computer player takes over their cards for the rest of this round.":"They’ll go back to the lobby.",
-    "Remove", ()=>{ socket.emit("kick",{target:p.index}); if(playerOpen!=="manage") closePlayer(); });
+  confirmBox(t("removeTitle",{name:p.name}), inRound&&!p.isAI?t("removeInRound"):t("removeWait"),
+    t("remove"), ()=>{ socket.emit("kick",{target:p.index}); if(playerOpen!=="manage") closePlayer(); });
 }
 function confirmBox(title,text,yes,fn){
-  $("#confirmNo").textContent="Cancel";
+  $("#confirmNo").textContent=t("cancel");
   $("#confirmTitle").textContent=title; $("#confirmText").textContent=text; $("#confirmYes").textContent=yes;
   $("#confirmYes").onclick=()=>{ $("#confirmOverlay").classList.add("hidden"); fn(); };
   $("#confirmNo").onclick=()=>$("#confirmOverlay").classList.add("hidden");
   $("#confirmOverlay").classList.remove("hidden");
 }
-setInterval(()=>{ const t=document.getElementById("forceTimer"); if(!t) return;
-  const s=Math.max(0,Math.ceil((forceDeadline-Date.now())/1000)); t.textContent=s>0?`auto-draw in ${s}s`:""; },250);
+setInterval(()=>{ const ft=document.getElementById("forceTimer"); if(!ft) return;
+  const sec=Math.max(0,Math.ceil((forceDeadline-Date.now())/1000)); ft.textContent=sec>0?t("autoIn",{s:sec}):""; },250);
 
 /* On touch screens the first tap lifts a card, the second tap plays it — stops the
    neighbouring card from being played when a fingertip lands on the overlap. */
@@ -1145,24 +1352,26 @@ function renderWait(){
 function openColorPicker(handIndex){
   const counts={red:0,yellow:0,green:0,blue:0};
   (S.hand||[]).forEach((c,i)=>{ if(i!==handIndex&&counts[c.color]!=null) counts[c.color]++; });
-  Object.keys(counts).forEach(k=>$("#cnt_"+k).textContent=counts[k]?`you hold ${counts[k]}`:"");
+  Object.keys(counts).forEach(k=>$("#cnt_"+k).textContent=counts[k]?t("youHold",{n:counts[k]}):"");
+  $("#colorOverlay h2").textContent=t("pickColour");
+  document.querySelectorAll(".colorpick .c").forEach(b=>{ b.childNodes[0].textContent=t(b.dataset.col).replace(/^./,ch=>ch.toUpperCase()); });
   $("#colorOverlay").classList.remove("hidden");
 }
 function showEnd(g){
   if(g.type==="ace") return showAceEnd(g);
-  $("#nextRoundBtn").textContent="Next round";
+  $("#nextRoundBtn").textContent=t("nextRound"); $("#backLobbyBtn").textContent=t("backLobby");
   const sc=g.scores||{order:[],tally:[]}, myPlace=sc.order.indexOf(S.players[S.me]?S.players[S.me].name:"");
   const iWon=myPlace===0, iLast=sc.loser&&S.players[S.me]&&sc.loser===S.players[S.me].name;
   $("#endIcon").textContent=iWon?"🏆":iLast?"😭":"🏁";
-  $("#endMsg").textContent=iWon?"You won the round!":iLast?"You came last this time":`${g.winner} won the round`;
-  const sb=$("#scoreboard"); sb.innerHTML=`<div class="lbl" style="margin:4px 0;">Finishing order</div>`;
+  $("#endMsg").textContent=iWon?t("endWon"):iLast?t("endLast"):t("endOther",{name:g.winner});
+  const sb=$("#scoreboard"); sb.innerHTML=`<div class="lbl" style="margin:4px 0;">${t("finishOrder")}</div>`;
   sc.order.forEach((n,k)=>{ const r=document.createElement("div"); r.className="srow"+(k===0?" win":"");
-    r.innerHTML=`<span>${k+1}${["st","nd","rd"][k]||"th"} · ${esc(n)}${k===0?" 👑":""}</span><span>finished</span>`; sb.appendChild(r); });
+    r.innerHTML=`<span>${placeT(k+1)} · ${esc(n)}${k===0?" 👑":""}</span><span>${t("finished")}</span>`; sb.appendChild(r); });
   if(sc.loser){ const r=document.createElement("div"); r.className="srow"; r.style.background="#ffd9de";
-    r.innerHTML=`<span>Last · ${esc(sc.loser)}</span><span>${sc.loserCards} card${sc.loserCards===1?"":"s"} left</span>`; sb.appendChild(r); }
-  const t=(sc.tally||[]).filter(x=>x.wins||x.lasts).sort((a,b)=>b.wins-a.wins||a.lasts-b.lasts);
-  if(t.length){ sb.insertAdjacentHTML("beforeend",`<div class="lbl" style="margin:10px 0 4px;">This room so far</div>`);
-    t.forEach(x=>{ const r=document.createElement("div"); r.className="srow"; r.innerHTML=`<span>${esc(x.name)}</span><span>🏆 ${x.wins} · 😭 ${x.lasts}</span>`; sb.appendChild(r); }); }
+    r.innerHTML=`<span>${t("lastRow",{name:esc(sc.loser)})}</span><span>${t("cardsLeft",{n:sc.loserCards})}</span>`; sb.appendChild(r); }
+  const tl=(sc.tally||[]).filter(x=>x.wins||x.lasts).sort((a,b)=>b.wins-a.wins||a.lasts-b.lasts);
+  if(tl.length){ sb.insertAdjacentHTML("beforeend",`<div class="lbl" style="margin:10px 0 4px;">${t("roomSoFar")}</div>`);
+    tl.forEach(x=>{ const r=document.createElement("div"); r.className="srow"; r.innerHTML=`<span>${esc(x.name)}</span><span>🏆 ${x.wins} · 😭 ${x.lasts}</span>`; sb.appendChild(r); }); }
   $("#nextRoundBtn").style.display=(S.hostId===socket.id)?"block":"none";
   if($("#endOverlay").classList.contains("hidden")){ if(iWon){ Sound.win(); Confetti.burst(); } }
   $("#endOverlay").classList.remove("hidden");
@@ -1242,17 +1451,17 @@ function showAceEnd(g){
   const iLost=g.loser===S.me, lost=g.loser>=0?S.players[g.loser]:null;
   const sc=g.scores||{escaped:[],tally:[]};
   $("#endIcon").textContent=iLost?"🐴":lost?"🏃":"🤝";
-  $("#endMsg").textContent=iLost?"You are the Kazhutha!":lost?`${lost.name} is the Kazhutha!`:"Everyone escaped — no Kazhutha!";
-  const sb=$("#scoreboard"); sb.innerHTML=`<div class="lbl" style="margin:4px 0;">Escape order</div>`;
+  $("#endMsg").textContent=iLost?t("endKazhuthaYou"):lost?t("endKazhutha",{name:lost.name}):t("endNoKazhutha");
+  const sb=$("#scoreboard"); sb.innerHTML=`<div class="lbl" style="margin:4px 0;">${t("escapeOrder")}</div>`;
   sc.escaped.forEach((n,k)=>{ const r=document.createElement("div"); r.className="srow"+(k===0?" win":"");
-    r.innerHTML=`<span>${k+1}${["st","nd","rd"][k]||"th"} · ${esc(n)}${k===0?" 👑":""}</span><span>escaped</span>`; sb.appendChild(r); });
+    r.innerHTML=`<span>${placeT(k+1)} · ${esc(n)}${k===0?" 👑":""}</span><span>${t("escaped")}</span>`; sb.appendChild(r); });
   if(lost){ const r=document.createElement("div"); r.className="srow"; r.style.background="#ffd9de";
-    r.innerHTML=`<span>${esc(lost.name)}</span><span>Kazhutha 🐴</span>`; sb.appendChild(r); }
-  const t=sc.tally.filter(x=>x.losses>0).sort((a,b)=>b.losses-a.losses);
-  if(t.length){ sb.insertAdjacentHTML("beforeend",`<div class="lbl" style="margin:10px 0 4px;">Kazhutha count in this room</div>`);
-    t.forEach(x=>{ const r=document.createElement("div"); r.className="srow"; r.innerHTML=`<span>${esc(x.name)}</span><span>${"🐴".repeat(Math.min(x.losses,5))} ${x.losses}</span>`; sb.appendChild(r); }); }
+    r.innerHTML=`<span>${esc(lost.name)}</span><span>${t("tagKazhutha")}</span>`; sb.appendChild(r); }
+  const tl=sc.tally.filter(x=>x.losses>0).sort((a,b)=>b.losses-a.losses);
+  if(tl.length){ sb.insertAdjacentHTML("beforeend",`<div class="lbl" style="margin:10px 0 4px;">${t("kazhuthaCount")}</div>`);
+    tl.forEach(x=>{ const r=document.createElement("div"); r.className="srow"; r.innerHTML=`<span>${esc(x.name)}</span><span>${"🐴".repeat(Math.min(x.losses,5))} ${x.losses}</span>`; sb.appendChild(r); }); }
   $("#nextRoundBtn").style.display=(S.hostId===socket.id)?"block":"none";
-  $("#nextRoundBtn").textContent="Play again";
+  $("#nextRoundBtn").textContent=t("playAgain"); $("#backLobbyBtn").textContent=t("backLobby");
   if($("#endOverlay").classList.contains("hidden")){ if(!iLost&&lost){ Sound.win(); if(g.escaped&&g.escaped[0]===S.me) Confetti.burst(); } else if(iLost) Sound.sad(); }
   $("#endOverlay").classList.remove("hidden");
 }
@@ -1289,8 +1498,7 @@ $("#startBtn").onclick=()=>{Sound.click();socket.emit("startGame");};
 $("#leaveWaitBtn").onclick=()=>backToLobby();
 $("#leaveBtn").onclick=()=>{ Sound.click();
   const inRound=S&&S.started&&S.game&&!S.game.over;
-  confirmBox("Leave this room?", inRound?"A computer player will take over your cards so the others can keep playing.":"You can join again with the room code.",
-    "Leave room", ()=>backToLobby()); };
+  confirmBox(t("leaveTitle"), inRound?t("leaveInRound"):t("leaveWait"), t("leaveRoom"), ()=>backToLobby()); };
 $("#playersBtn").onclick=()=>{ Sound.click(); openManage(); };
 $("#playerOverlay").addEventListener("click",e=>{ if(e.target.id==="playerOverlay") closePlayer(); });
 $("#backLobbyBtn").onclick=()=>backToLobby();
@@ -1299,6 +1507,9 @@ $("#colorOverlay").addEventListener("click",e=>{const c=e.target.closest(".c");i
   $("#colorOverlay").classList.add("hidden"); Sound.wild();
   if(pendingPlay!==null){socket.emit("play",{handIndex:pendingPlay,color:c.dataset.col});pendingPlay=null;}});
 $("#colorCancel").onclick=()=>{ pendingPlay=null; $("#colorOverlay").classList.add("hidden"); };
+$("#langBtn").onclick=()=>{ Sound.click(); setLang(LANG==="ml"?"en":"ml"); };
+$("#langPick").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; Sound.click(); setLang(b.dataset.l); });
+setLang(LANG);
 $("#soundBtn").onclick=()=>{ const on=!Sound.isOn(); Sound.setOn(on); $("#soundBtn").textContent=on?"🔊":"🔇"; if(on){Sound.unlock();Sound.click();} };
 
 ["touchstart","pointerdown"].forEach(ev=>window.addEventListener(ev,()=>Sound.unlock(),{once:true}));
